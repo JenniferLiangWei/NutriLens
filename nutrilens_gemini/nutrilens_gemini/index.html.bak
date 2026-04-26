@@ -215,53 +215,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
 
 .flex{display:flex;}.flex-between{display:flex;justify-content:space-between;align-items:center;}
 .gap-sm{gap:0.5rem;}
-
-/* WATER TRACKER */
-.water-tracker{display:flex;align-items:center;gap:0.75rem;}
-.water-glasses{display:flex;gap:6px;flex-wrap:wrap;}
-.water-glass{width:32px;height:32px;border-radius:6px;border:2px solid var(--border2);background:var(--bg3);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;font-size:1rem;}
-.water-glass.filled{background:rgba(30,95,140,0.15);border-color:#1E5F8C;}
-.water-reset{font-size:0.72rem;color:var(--text3);cursor:pointer;text-decoration:underline;margin-left:auto;}
-
-/* FAVOURITES */
-.fav-item{display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0;border-bottom:1px solid var(--border);}
-.fav-item:last-child{border-bottom:none;}
-.fav-name{flex:1;font-size:0.85rem;font-weight:500;color:var(--text);}
-.fav-cal{font-size:0.78rem;color:var(--text3);}
-.fav-add{padding:3px 10px;border-radius:6px;border:1px solid var(--green);color:var(--green);background:transparent;font-size:0.75rem;cursor:pointer;font-family:'Outfit',sans-serif;}
-.fav-del{padding:3px 8px;border-radius:6px;border:none;color:#F87171;background:rgba(248,113,113,0.1);font-size:0.75rem;cursor:pointer;}
-
-/* PORTION ADJUSTER */
-.portion-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;}
-.portion-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.portion-val{font-size:1rem;font-weight:600;min-width:36px;text-align:center;}
-
-/* ONBOARDING */
-.onboard-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}
-.onboard-card{background:#fff;border-radius:var(--r);padding:1.75rem;max-width:360px;width:100%;text-align:center;}
-.onboard-emoji{font-size:2.5rem;margin-bottom:0.75rem;}
-.onboard-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;}
-.onboard-text{font-size:0.84rem;color:var(--text2);line-height:1.65;margin-bottom:1.25rem;}
-.onboard-dots{display:flex;justify-content:center;gap:6px;margin-bottom:1.25rem;}
-.onboard-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);}
-.onboard-dot.active{background:var(--green);}
-.onboard-btn{width:100%;padding:0.75rem;border-radius:var(--r-sm);background:#1A4A35;color:#fff;border:none;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;}
-
-/* SHARE BUTTON */
-.share-btn{display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.85rem;font-weight:500;width:100%;margin-top:0.5rem;}
-.share-btn:hover{border-color:var(--green);color:var(--green);}
-
-/* NOTIFICATION REMINDER */
-.notif-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;}
-.notif-label{font-size:0.84rem;color:var(--text2);}
-.toggle-switch{width:44px;height:24px;background:var(--border2);border-radius:99px;position:relative;cursor:pointer;transition:background 0.2s;border:none;padding:0;}
-.toggle-switch.on{background:var(--green);}
-.toggle-knob{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform 0.2s;}
-.toggle-switch.on .toggle-knob{transform:translateX(20px);}
-
-/* EXPORT BTN */
-.export-row{display:flex;gap:0.5rem;margin-top:0.5rem;}
-
 </style>
 </head>
 <body>
@@ -313,7 +266,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
         <button class="camera-btn" onclick="document.getElementById('file-input').click()">🖼️ Gallery</button>
       </div>
       <button class="btn btn-primary" id="analyze-btn" onclick="analyzePhoto()" disabled>Analyze with AI</button>
-      <button class="btn btn-ghost" style="width:100%;margin-top:0.4rem;font-size:0.8rem;" onclick="showFavs()">⭐ Quick Add Favourite</button>
     </div>
     <div class="method-content" id="method-describe">
       <div class="form-group">
@@ -321,7 +273,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
         <textarea class="form-control" id="food-description" placeholder="e.g. 2 scrambled eggs with toast and orange juice" style="min-height:90px;"></textarea>
       </div>
       <button class="btn btn-primary" onclick="analyzeDescription()">Analyze Food</button>
-      <button class="btn btn-ghost" style="width:100%;margin-top:0.4rem;font-size:0.8rem;" onclick="showFavs()">⭐ Quick Add Favourite</button>
     </div>
     <div class="method-content" id="method-manual">
       <div class="form-group"><label class="form-label">Food name</label><input type="text" class="form-control" id="manual-name" placeholder="e.g. Chicken breast"></div>
@@ -338,16 +289,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
       </div>
       <button class="btn btn-primary" onclick="addManual()">Add to Log</button>
     </div>
-    <!-- FAVOURITES QUICK ADD -->
-    <div id="favs-panel" style="display:none;margin-bottom:0.75rem;">
-      <div class="card" style="margin-bottom:0;">
-        <div class="flex-between" style="margin-bottom:0.5rem;">
-          <div class="card-title" style="margin:0;font-size:0.78rem;">⭐ Quick Add Favourites</div>
-          <button class="btn btn-sm btn-ghost" onclick="document.getElementById('favs-panel').style.display='none'">✕</button>
-        </div>
-        <div id="favs-list"></div>
-      </div>
-    </div>
     <div class="loading" id="loading"><div class="spinner"></div>Analyzing your food...</div>
     <div class="alert" id="log-alert"></div>
     <div class="ai-result card" id="ai-result" style="margin-top:0.75rem;">
@@ -361,16 +302,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
         <div class="macro-pill" style="background:rgba(107,63,160,0.1);"><span class="val" style="color:var(--purple);" id="r-sugar">0</span><span class="lbl" style="color:var(--purple);">sugar</span></div>
       </div>
       <div id="result-note" style="font-size:0.8rem;color:var(--text3);margin-bottom:0.85rem;line-height:1.65;padding:0.6rem;background:var(--bg3);border-radius:var(--r-xs);"></div>
-      <!-- PORTION ADJUSTER -->
-      <div style="margin-bottom:0.75rem;">
-        <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.4rem;">Adjust portion</div>
-        <div class="portion-row">
-          <button class="portion-btn" onclick="adjustPortion(0.5)">−</button>
-          <span class="portion-val" id="portion-mult">1×</span>
-          <button class="portion-btn" onclick="adjustPortion(1.5)">+</button>
-          <span style="font-size:0.78rem;color:var(--text3);">multiplier</span>
-        </div>
-      </div>
       <div class="meal-row">
         <button class="meal-btn active" onclick="selectMeal(this,'Breakfast')">🌅 Breakfast</button>
         <button class="meal-btn" onclick="selectMeal(this,'Lunch')">🌞 Lunch</button>
@@ -380,8 +311,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <input type="hidden" id="result-meal" value="Breakfast">
       <div class="flex gap-sm">
         <button class="btn btn-primary" style="flex:2;margin-top:0;" onclick="addToLog()">Add to Log</button>
-        <button class="btn btn-ghost" style="flex:1;margin-top:0;" onclick="saveFavourite()">⭐ Save</button>
-        <button class="btn btn-ghost" style="margin-top:0;padding:0.65rem 0.75rem;" onclick="hideResult()">✕</button>
+        <button class="btn btn-ghost" style="flex:1;margin-top:0;" onclick="hideResult()">Discard</button>
       </div>
     </div>
   </div>
@@ -412,14 +342,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <div class="stat-box"><span class="stat-val" style="color:var(--orange);" id="t-fat">0g</span><span class="stat-lbl">Fat</span></div>
       <div class="stat-box"><span class="stat-val" style="color:var(--purple);" id="t-sugar">0g</span><span class="stat-lbl">Sugar</span></div>
       <div class="stat-box"><span class="stat-val" style="color:var(--amber);" id="t-fiber">0g</span><span class="stat-lbl">Fiber</span></div>
-    </div>
-    <div class="card">
-      <div class="card-title">💧 Water Intake</div>
-      <div class="water-tracker">
-        <div class="water-glasses" id="water-glasses"></div>
-        <span class="water-reset" onclick="resetWater()">reset</span>
-      </div>
-      <div style="font-size:0.75rem;color:var(--text3);margin-top:0.5rem;" id="water-label">0 of 8 glasses</div>
     </div>
     <div class="card">
       <div class="card-title">Progress vs Goals</div>
@@ -473,37 +395,10 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <div class="card-title">Daily Targets</div>
       <div class="stat-row" id="targets-grid" style="grid-template-columns:repeat(3,1fr);"></div>
     </div>
-    <!-- NOTIFICATIONS -->
-    <div class="card">
-      <div class="card-title">🔔 Meal Reminders</div>
-      <div class="notif-row">
-        <span class="notif-label">Breakfast reminder (8:00 AM)</span>
-        <button class="toggle-switch" id="notif-breakfast" onclick="toggleNotif('breakfast',this)"><span class="toggle-knob"></span></button>
-      </div>
-      <div class="notif-row">
-        <span class="notif-label">Lunch reminder (12:30 PM)</span>
-        <button class="toggle-switch" id="notif-lunch" onclick="toggleNotif('lunch',this)"><span class="toggle-knob"></span></button>
-      </div>
-      <div class="notif-row">
-        <span class="notif-label">Dinner reminder (6:30 PM)</span>
-        <button class="toggle-switch" id="notif-dinner" onclick="toggleNotif('dinner',this)"><span class="toggle-knob"></span></button>
-      </div>
-      <p style="font-size:0.72rem;color:var(--text3);margin-top:0.5rem;">Requires notification permission</p>
-    </div>
-    <!-- EXPORT -->
-    <div class="card">
-      <div class="card-title">📊 Export Data</div>
-      <p style="font-size:0.8rem;color:var(--text3);margin-bottom:0.75rem;">Download your food log as CSV or PDF</p>
-      <div class="export-row">
-        <button class="btn btn-ghost" style="flex:1;" onclick="exportCSV()">⬇ CSV</button>
-        <button class="btn btn-ghost" style="flex:1;" onclick="exportPDF()">⬇ PDF</button>
-      </div>
-    </div>
     <div class="card">
       <div class="card-title">Share App</div>
-      <p style="font-size:0.8rem;color:var(--text3);line-height:1.7;margin-bottom:0.75rem;">Share NutriLens with friends &amp; family!</p>
-      <button class="share-btn" onclick="shareApp()">📤 Share NutriLens Link</button>
-      <p style="font-size:0.72rem;color:var(--text3);margin-top:0.75rem;">iPhone: Safari → Share → Add to Home Screen<br>Android: Chrome → Add to Home Screen</p>
+      <p style="font-size:0.8rem;color:var(--text3);line-height:1.7;">Share <strong style="color:var(--text2);">mynutrilens.netlify.app</strong> with anyone.<br>
+      iPhone: Safari > Share > Add to Home Screen<br>Android: Chrome > Add to Home Screen</p>
     </div>
   </div>
 
@@ -626,13 +521,12 @@ async function analyzePhoto(){if(!state.imageB64)return;showLoading(true);hideRe
 async function analyzeDescription(){const desc=document.getElementById('food-description').value.trim();if(!desc){setAlert('Please describe what you ate.','error');return;}showLoading(true);hideResult();setAlert('','');try{const prompt=`The user ate: "${desc}". ${nutritionPrompt()}`;const text=await callGemini(state.apiKey,prompt,null,null);const json=JSON.parse(text.replace(/```json|```/g,'').trim());showResult(json);}catch(e){setAlert('Error: '+(e.message||'Analysis failed'),'error');}showLoading(false);}
 function showResult(json){state.pendingResult=json;document.getElementById('result-name').textContent=json.name||'Unknown food';document.getElementById('result-portion').textContent=json.portion||'';document.getElementById('r-cal').textContent=Math.round(json.calories||0);document.getElementById('r-protein').textContent=Math.round(json.protein||0);document.getElementById('r-carbs').textContent=Math.round(json.carbs||0);document.getElementById('r-fat').textContent=Math.round(json.fat||0);document.getElementById('r-sugar').textContent=Math.round(json.sugar||0);document.getElementById('result-note').textContent=json.note||'';document.getElementById('ai-result').classList.add('visible');}
 function hideResult(){document.getElementById('ai-result').classList.remove('visible');state.pendingResult=null;}
-function addToLog(){if(!state.pendingResult)return;state.log.push({...state.pendingResult,meal:document.getElementById('result-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();saveHistorySnapshot();setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);}
+function addToLog(){if(!state.pendingResult)return;state.log.push({...state.pendingResult,meal:document.getElementById('result-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);}
 function addManual(){const name=document.getElementById('manual-name').value.trim();if(!name){setAlert('Please enter a food name.','error');return;}state.log.push({name,portion:'Manual entry',calories:parseFloat(document.getElementById('m-cal').value)||0,protein:parseFloat(document.getElementById('m-protein').value)||0,carbs:parseFloat(document.getElementById('m-carbs').value)||0,fat:parseFloat(document.getElementById('m-fat').value)||0,sugar:parseFloat(document.getElementById('m-sugar').value)||0,fiber:parseFloat(document.getElementById('m-fiber').value)||0,meal:document.getElementById('m-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();setAlert('Added!','success');['manual-name','m-cal','m-protein','m-carbs','m-fat','m-sugar','m-fiber'].forEach(id=>document.getElementById(id).value='');setTimeout(()=>setAlert('',''),1800);}
 function removeEntry(id){state.log=state.log.filter(e=>e.id!==id);save();renderToday();}
 function clearLog(){if(confirm('Clear all entries?')){state.log=[];save();renderToday();}}
 function getTotals(){return state.log.reduce((a,e)=>({calories:a.calories+(e.calories||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0)}),{calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0});}
 function renderToday(){
-  initWater();
   const t=getTotals();const tgt=state.targets||{calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
   document.getElementById('t-protein').textContent=Math.round(t.protein)+'g';
   document.getElementById('t-carbs').textContent=Math.round(t.carbs)+'g';
@@ -677,295 +571,6 @@ function checkInstallBanner(){if(localStorage.getItem('nl_installed'))document.g
 window.addEventListener('appinstalled',()=>{localStorage.setItem('nl_installed','1');dismissInstall();});
 function showLoading(v){document.getElementById('loading').classList.toggle('visible',v);}
 function setAlert(msg,type){const el=document.getElementById('log-alert');el.textContent=msg;el.className='alert'+(type?' '+type:'');}
-
-// ─── WATER TRACKER ───
-function initWater() {
-  const count = parseInt(localStorage.getItem('nl_water') || '0');
-  renderWater(count);
-}
-function renderWater(count) {
-  const glasses = document.getElementById('water-glasses');
-  const label = document.getElementById('water-label');
-  if (!glasses) return;
-  glasses.innerHTML = Array.from({length: 8}, (_, i) =>
-    `<div class="water-glass ${i < count ? 'filled' : ''}" onclick="addWater(${i})">💧</div>`
-  ).join('');
-  if (label) label.textContent = `${count} of 8 glasses`;
-}
-function addWater(idx) {
-  const cur = parseInt(localStorage.getItem('nl_water') || '0');
-  const next = idx < cur ? idx : idx + 1;
-  localStorage.setItem('nl_water', next);
-  renderWater(next);
-}
-function resetWater() {
-  localStorage.setItem('nl_water', '0');
-  renderWater(0);
-}
-// Reset water at midnight
-const lastWaterDate = localStorage.getItem('nl_water_date');
-const today = new Date().toISOString().slice(0,10);
-if (lastWaterDate !== today) {
-  localStorage.setItem('nl_water', '0');
-  localStorage.setItem('nl_water_date', today);
-}
-
-// ─── FAVOURITES ───
-function getFavourites() {
-  try { return JSON.parse(localStorage.getItem('nl_favs') || '[]'); } catch(e) { return []; }
-}
-function saveFavourites(favs) {
-  localStorage.setItem('nl_favs', JSON.stringify(favs));
-}
-function saveFavourite() {
-  if (!state.pendingResult) return;
-  const favs = getFavourites();
-  const item = {
-    name: state.pendingResult.name,
-    portion: state.pendingResult.portion,
-    calories: state.pendingResult.calories,
-    protein: state.pendingResult.protein,
-    carbs: state.pendingResult.carbs,
-    fat: state.pendingResult.fat,
-    sugar: state.pendingResult.sugar,
-    fiber: state.pendingResult.fiber,
-    id: Date.now()
-  };
-  if (!favs.find(f => f.name.toLowerCase() === item.name.toLowerCase())) {
-    favs.unshift(item);
-    if (favs.length > 20) favs.pop();
-    saveFavourites(favs);
-    setAlert('Saved to favourites!', 'success');
-    setTimeout(() => setAlert('', ''), 1800);
-  } else {
-    setAlert('Already in favourites', 'success');
-    setTimeout(() => setAlert('', ''), 1800);
-  }
-}
-function showFavs() {
-  const favs = getFavourites();
-  const panel = document.getElementById('favs-panel');
-  const list = document.getElementById('favs-list');
-  if (!favs.length) {
-    list.innerHTML = '<p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:0.5rem;">No favourites yet. Analyze food and tap ⭐ Save.</p>';
-  } else {
-    list.innerHTML = favs.map(f => `
-      <div class="fav-item">
-        <div>
-          <div class="fav-name">${f.name}</div>
-          <div class="fav-cal">${Math.round(f.calories)} kcal · P${Math.round(f.protein)}g C${Math.round(f.carbs)}g F${Math.round(f.fat)}g</div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button class="fav-add" onclick="quickAddFav(${f.id})">+ Add</button>
-          <button class="fav-del" onclick="deleteFav(${f.id})">✕</button>
-        </div>
-      </div>`).join('');
-  }
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-function quickAddFav(id) {
-  const favs = getFavourites();
-  const f = favs.find(x => x.id === id);
-  if (!f) return;
-  // Apply current portion multiplier
-  const mult = parseFloat(document.getElementById('portion-mult')?.textContent) || 1;
-  state.log.push({
-    ...f,
-    meal: document.getElementById('result-meal')?.value || 'Snack',
-    time: new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}),
-    id: Date.now(),
-    calories: f.calories * mult,
-    protein: f.protein * mult,
-    carbs: f.carbs * mult,
-    fat: f.fat * mult,
-    sugar: (f.sugar||0) * mult,
-    fiber: (f.fiber||0) * mult
-  });
-  save(); saveHistorySnapshot();
-  setAlert('Added from favourites!', 'success');
-  setTimeout(() => setAlert('', ''), 1800);
-  renderToday();
-}
-function deleteFav(id) {
-  const favs = getFavourites().filter(f => f.id !== id);
-  saveFavourites(favs);
-  showFavs();
-}
-
-// ─── PORTION ADJUSTER ───
-let portionMultiplier = 1;
-let baseResult = null;
-function adjustPortion(factor) {
-  if (!state.pendingResult) return;
-  if (!baseResult) baseResult = {...state.pendingResult};
-  portionMultiplier = Math.max(0.25, Math.min(4, portionMultiplier * factor));
-  const mult = portionMultiplier;
-  const disp = mult % 1 === 0 ? mult + '×' : mult.toFixed(2) + '×';
-  document.getElementById('portion-mult').textContent = disp;
-  const scaled = {
-    ...baseResult,
-    calories: baseResult.calories * mult,
-    protein: baseResult.protein * mult,
-    carbs: baseResult.carbs * mult,
-    fat: baseResult.fat * mult,
-    sugar: (baseResult.sugar||0) * mult,
-    fiber: (baseResult.fiber||0) * mult
-  };
-  state.pendingResult = scaled;
-  document.getElementById('r-cal').textContent = Math.round(scaled.calories);
-  document.getElementById('r-protein').textContent = Math.round(scaled.protein);
-  document.getElementById('r-carbs').textContent = Math.round(scaled.carbs);
-  document.getElementById('r-fat').textContent = Math.round(scaled.fat);
-  document.getElementById('r-sugar').textContent = Math.round(scaled.sugar);
-}
-// Reset portion when new result shown — patch showResult
-const _origShowResult = showResult;
-window.showResult = function(json) {
-  baseResult = null;
-  portionMultiplier = 1;
-  const el = document.getElementById('portion-mult');
-  if (el) el.textContent = '1×';
-  _origShowResult(json);
-};
-
-// ─── NOTIFICATIONS ───
-function loadNotifToggles() {
-  ['breakfast','lunch','dinner'].forEach(meal => {
-    const on = localStorage.getItem('nl_notif_' + meal) === '1';
-    const btn = document.getElementById('notif-' + meal);
-    if (btn && on) btn.classList.add('on');
-  });
-}
-function toggleNotif(meal, btn) {
-  const isOn = btn.classList.toggle('on');
-  localStorage.setItem('nl_notif_' + meal, isOn ? '1' : '0');
-  if (isOn) {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().then(p => {
-        if (p !== 'granted') { btn.classList.remove('on'); localStorage.setItem('nl_notif_' + meal, '0'); }
-      });
-    } else if (Notification.permission === 'denied') {
-      btn.classList.remove('on');
-      alert('Notifications are blocked. Please enable them in your browser settings.');
-    }
-  }
-}
-// Schedule notification checks
-function checkNotifications() {
-  if (Notification.permission !== 'granted') return;
-  const now = new Date();
-  const hm = now.getHours() * 60 + now.getMinutes();
-  const meals = {breakfast: 8*60, lunch: 12*60+30, dinner: 18*60+30};
-  Object.entries(meals).forEach(([meal, time]) => {
-    if (localStorage.getItem('nl_notif_' + meal) === '1' && hm === time) {
-      const last = localStorage.getItem('nl_notif_last_' + meal);
-      const today = now.toISOString().slice(0,10);
-      if (last !== today) {
-        new Notification('NutriLens 🍽️', { body: `Time to log your ${meal}!`, icon: '/icon-192.svg' });
-        localStorage.setItem('nl_notif_last_' + meal, today);
-      }
-    }
-  });
-}
-setInterval(checkNotifications, 60000);
-
-// ─── EXPORT CSV ───
-function exportCSV() {
-  const hist = JSON.parse(localStorage.getItem('nl_history') || '{}');
-  const today = new Date().toISOString().slice(0,10);
-  if (state.log.length) hist[today] = getTotals();
-  const rows = [['Date','Calories','Protein(g)','Carbs(g)','Fat(g)','Sugar(g)','Fiber(g)']];
-  Object.keys(hist).sort().forEach(date => {
-    const d = hist[date];
-    rows.push([date, Math.round(d.calories), Math.round(d.protein), Math.round(d.carbs), Math.round(d.fat), Math.round(d.sugar||0), Math.round(d.fiber||0)]);
-  });
-  // Also add today's individual items
-  if (state.log.length) {
-    rows.push([]);
-    rows.push(['Today Detail:','Food','Meal','Calories','Protein(g)','Carbs(g)','Fat(g)']);
-    state.log.forEach(e => rows.push(['', e.name, e.meal, Math.round(e.calories), Math.round(e.protein), Math.round(e.carbs), Math.round(e.fat)]));
-  }
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'nutrilens_export.csv';
-  a.click();
-}
-
-// ─── EXPORT PDF ───
-function exportPDF() {
-  const hist = JSON.parse(localStorage.getItem('nl_history') || '{}');
-  const today = new Date().toISOString().slice(0,10);
-  if (state.log.length) hist[today] = getTotals();
-  const tgt = state.targets || {calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
-  const rows = Object.keys(hist).sort().reverse().slice(0,30).map(date => {
-    const d = hist[date];
-    return `<tr><td>${date}</td><td>${Math.round(d.calories)}</td><td>${Math.round(d.protein)}g</td><td>${Math.round(d.carbs)}g</td><td>${Math.round(d.fat)}g</td></tr>`;
-  }).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NutriLens Report</title>
-  <style>body{font-family:sans-serif;padding:2rem;color:#1C2B1E;}h1{color:#2D6A4F;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;}th{background:#2D6A4F;color:#fff;}tr:nth-child(even){background:#f5f5f5;}</style></head>
-  <body><h1>NutriLens Nutrition Report</h1><p>Generated: ${new Date().toLocaleDateString()}</p>
-  <h2>Daily Goals</h2><p>Calories: ${tgt.calories} kcal | Protein: ${tgt.protein}g | Carbs: ${tgt.carbs}g | Fat: ${tgt.fat}g</p>
-  <h2>History (Last 30 days)</h2><table><tr><th>Date</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr>${rows}</table>
-  </body></html>`;
-  const blob = new Blob([html], {type:'text/html'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'nutrilens_report.html';
-  a.click();
-  setTimeout(() => alert('Tip: Open the downloaded file in your browser and use Print → Save as PDF'), 500);
-}
-
-// ─── SHARE APP ───
-function shareApp() {
-  const url = window.location.origin;
-  if (navigator.share) {
-    navigator.share({ title: 'NutriLens — AI Nutrition Tracker', text: 'Track your nutrition with AI! Log food by photo and track macros.', url });
-  } else {
-    navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard!\n' + url)).catch(() => prompt('Copy this link:', url));
-  }
-}
-
-// ─── ONBOARDING ───
-const onboardSteps = [
-  { emoji:'🌿', title:'Welcome to NutriLens', text:'Your AI-powered nutrition tracker. Log food by photo or description and get instant macro breakdowns.' },
-  { emoji:'📷', title:'Log Food by Photo', text:'Take a photo of your meal and our AI will instantly estimate calories, protein, carbs, fat and more.' },
-  { emoji:'⭐', title:'Save Your Favourites', text:'After analyzing a food, tap ⭐ Save to add it to favourites for quick logging later.' },
-  { emoji:'📊', title:'Track Your Progress', text:'Set your profile to get personalized calorie goals. Check History for weekly/monthly trends.' }
-];
-let onboardStep = 0;
-function showOnboarding() {
-  if (localStorage.getItem('nl_onboarded')) return;
-  document.getElementById('onboard-overlay').style.display = 'flex';
-  renderOnboardStep(0);
-}
-function renderOnboardStep(i) {
-  onboardStep = i;
-  const s = onboardSteps[i];
-  document.getElementById('ob-emoji').textContent = s.emoji;
-  document.getElementById('ob-title').textContent = s.title;
-  document.getElementById('ob-text').textContent = s.text;
-  document.getElementById('ob-btn').textContent = i < onboardSteps.length - 1 ? 'Next →' : 'Get Started!';
-  onboardSteps.forEach((_, idx) => {
-    const dot = document.getElementById('dot-' + idx);
-    if (dot) dot.classList.toggle('active', idx === i);
-  });
-}
-function nextOnboard() {
-  if (onboardStep < onboardSteps.length - 1) {
-    renderOnboardStep(onboardStep + 1);
-  } else {
-    localStorage.setItem('nl_onboarded', '1');
-    document.getElementById('onboard-overlay').style.display = 'none';
-  }
-}
-
-// ─── INIT NEW FEATURES ───
-initWater();
-loadNotifToggles();
-showOnboarding();
-
 </script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 
@@ -1153,20 +758,5 @@ function renderHistory() {
 }
 </script>
 
-<!-- ONBOARDING -->
-<div class="onboard-overlay" id="onboard-overlay" style="display:none;">
-  <div class="onboard-card">
-    <div class="onboard-emoji" id="ob-emoji">🌿</div>
-    <div class="onboard-title" id="ob-title">Welcome to NutriLens</div>
-    <div class="onboard-text" id="ob-text">Your AI-powered nutrition tracker. Log food by photo or description and track your macros effortlessly.</div>
-    <div class="onboard-dots">
-      <div class="onboard-dot active" id="dot-0"></div>
-      <div class="onboard-dot" id="dot-1"></div>
-      <div class="onboard-dot" id="dot-2"></div>
-      <div class="onboard-dot" id="dot-3"></div>
-    </div>
-    <button class="onboard-btn" id="ob-btn" onclick="nextOnboard()">Next →</button>
-  </div>
-</div>
 </body>
 </html>
