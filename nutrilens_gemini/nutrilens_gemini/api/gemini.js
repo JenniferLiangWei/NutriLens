@@ -1,40 +1,66 @@
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return {statusCode:200,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'},body:''};
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
-  if (event.httpMethod !== 'POST') return {statusCode:405,body:'Method not allowed'};
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const {prompt,imageB64,imageMime} = JSON.parse(event.body);
+    const { prompt, imageB64, imageMime } = req.body;
+
     const key = process.env.GEMINI_API_KEY;
-    if (!key) return {statusCode:500,headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify({error:'API key not configured'})};
-    if (!prompt) return {statusCode:400,headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify({error:'Missing prompt'})};
+    if (!key) {
+      return res.status(500).json({ error: 'API key not configured on server' });
+    }
+    if (!prompt) {
+      return res.status(400).json({ error: 'Missing prompt' });
+    }
 
     const parts = [];
-    if (imageB64) parts.push({inlineData:{mimeType:imageMime||'image/jpeg',data:imageB64}});
-    parts.push({text:prompt});
+    if (imageB64) {
+      parts.push({ inlineData: { mimeType: imageMime || 'image/jpeg', data: imageB64 } });
+    }
+    parts.push({ text: prompt });
 
-    const models = ['gemini-1.5-flash','gemini-1.5-flash-latest','gemini-2.0-flash'];
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
     let lastError = null;
 
     for (const model of models) {
       try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}]})}
-        );
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts }] })
+        });
+
         const data = await response.json();
+
         if (!response.ok) {
-          const msg = data?.error?.message || 'HTTP '+response.status;
-          lastError = msg;
+          lastError = data?.error?.message || 'HTTP ' + response.status;
           continue;
         }
+
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (!text) {lastError='Empty response';continue;}
-        return {statusCode:200,headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/json'},body:JSON.stringify({text})};
-      } catch(e) {lastError=e.message;}
+        if (!text) {
+          lastError = 'Empty response from model';
+          continue;
+        }
+
+        return res.status(200).json({ text });
+      } catch (e) {
+        lastError = e.message;
+      }
     }
-    return {statusCode:500,headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify({error:lastError||'All models failed'})};
-  } catch(e) {
-    return {statusCode:500,headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify({error:'EXCEPTION: '+e.message})};
+
+    return res.status(500).json({ error: lastError || 'All models failed' });
+  } catch (e) {
+    return res.status(500).json({ error: 'Exception: ' + e.message });
   }
-};
+}
