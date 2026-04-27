@@ -750,7 +750,7 @@ function renderToday(){
   if(!state.log.length){document.getElementById('log-body').innerHTML='<div class="log-empty"><span class="log-empty-icon">🍽️</span>No entries yet.</div>';return;}
   const mE={Breakfast:'🌅',Lunch:'🌞',Dinner:'🌙',Snack:'🍎'};
   const mC={Breakfast:'#92600A',Lunch:'#2D6A4F',Dinner:'#1E5F8C',Snack:'#6B3FA0'};
-  document.getElementById('log-body').innerHTML=state.log.map(e=>`<div class="log-item"><div class="log-dot" style="background:${(mC[e.meal]||'#4ADE80')}18;">${mE[e.meal]||'🍽️'}</div><div class="log-info"><div class="log-name">${e.name}</div><div class="log-meta">${e.time} · ${e.portion||''}</div><div class="log-macros"><span class="log-macro" style="background:rgba(45,106,79,0.1);color:#2D6A4F;">P ${Math.round(e.protein)}g</span><span class="log-macro" style="background:rgba(30,95,140,0.1);color:#1E5F8C;">C ${Math.round(e.carbs)}g</span><span class="log-macro" style="background:rgba(192,86,33,0.1);color:#C05621;">F ${Math.round(e.fat)}g</span></div></div><div class="log-right"><span class="log-cal">${Math.round(e.calories)}</span><span class="log-kcal">kcal</span><button class="btn btn-sm" style="background:rgba(248,113,113,0.1);color:#F87171;border:none;padding:2px 6px;border-radius:5px;" onclick="removeEntry(${e.id})">x</button></div></div>`).join('');
+  document.getElementById('log-body').innerHTML=state.log.map(e=>`<div class="log-item" onclick="showMealDetail(${e.id})" style="cursor:pointer;"><div class="log-dot" style="background:${(mC[e.meal]||'#4ADE80')}18;">${mE[e.meal]||'🍽️'}</div><div class="log-info"><div class="log-name">${e.name}</div><div class="log-meta">${e.time} · ${e.portion||''}</div><div class="log-macros"><span class="log-macro" style="background:rgba(45,106,79,0.1);color:#2D6A4F;">P ${Math.round(e.protein)}g</span><span class="log-macro" style="background:rgba(30,95,140,0.1);color:#1E5F8C;">C ${Math.round(e.carbs)}g</span><span class="log-macro" style="background:rgba(192,86,33,0.1);color:#C05621;">F ${Math.round(e.fat)}g</span></div></div><div class="log-right"><span class="log-cal">${Math.round(e.calories)}</span><span class="log-kcal">kcal</span><button class="btn btn-sm" style="background:rgba(248,113,113,0.1);color:#F87171;border:none;padding:2px 6px;border-radius:5px;" onclick="event.stopPropagation();removeEntry(${e.id})">x</button></div></div>`).join('');
 }
 async function renderSuggestions(){if(!state.log.length){document.getElementById('suggestions-body').innerHTML='<div class="log-empty"><span class="log-empty-icon">💡</span>Log some food first.</div>';document.getElementById('regen-wrap').style.display='none';return;}await generateSuggestions();}
 async function generateSuggestions(){
@@ -773,6 +773,30 @@ function checkInstallBanner(){if(localStorage.getItem('nl_installed'))document.g
 window.addEventListener('appinstalled',()=>{localStorage.setItem('nl_installed','1');dismissInstall();});
 function showLoading(v){document.getElementById('loading').classList.toggle('visible',v);}
 function setAlert(msg,type){const el=document.getElementById('log-alert');el.textContent=msg;el.className='alert'+(type?' '+type:'');}
+
+// ─── MEAL DETAIL MODAL ───
+function showMealDetail(id) {
+  const entry = state.log.find(e => e.id === id);
+  if (!entry) return;
+  const overlay = document.getElementById('day-detail-overlay');
+  document.getElementById('day-detail-title').textContent = entry.name;
+  document.getElementById('day-detail-summary').innerHTML = [
+    {label:'kcal', val: Math.round(entry.calories), color:'var(--amber)'},
+    {label:'protein', val: Math.round(entry.protein)+'g', color:'var(--green)'},
+    {label:'carbs', val: Math.round(entry.carbs)+'g', color:'var(--blue)'},
+    {label:'fat', val: Math.round(entry.fat)+'g', color:'var(--orange)'},
+    {label:'sugar', val: Math.round(entry.sugar||0)+'g', color:'var(--purple)'},
+    {label:'fiber', val: Math.round(entry.fiber||0)+'g', color:'#8B6914'},
+  ].map(p => `<div style="padding:6px 12px;border-radius:20px;background:${p.color}18;font-size:0.8rem;font-weight:700;color:${p.color}">${p.val} <span style="font-weight:400;font-size:0.72rem;">${p.label}</span></div>`).join('');
+  document.getElementById('day-detail-meals').innerHTML = `
+    <div style="font-size:0.82rem;color:var(--text2);line-height:1.8;">
+      <div><strong>Meal:</strong> ${entry.meal}</div>
+      <div><strong>Time:</strong> ${entry.time||'—'}</div>
+      <div><strong>Portion:</strong> ${entry.portion||'—'}</div>
+      ${entry.note ? `<div style="margin-top:0.5rem;padding:0.5rem;background:var(--bg3);border-radius:8px;font-size:0.78rem;">${entry.note}</div>` : ''}
+    </div>`;
+  overlay.style.display = 'block';
+}
 
 // ─── LOG DATE PICKER ───
 function initLogDate() {
@@ -1227,6 +1251,9 @@ function saveHistorySnapshot() {
 }
 
 function renderHistory() {
+  // Always save today before rendering history
+  saveHistorySnapshot();
+  saveDetailHistory();
   const days = currentPeriod === 'week' ? 7 : 30;
   const data = getHistoryData(days);
   const tgt = state.targets || {calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
