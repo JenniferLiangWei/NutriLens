@@ -136,12 +136,18 @@ textarea.form-control{resize:vertical;min-height:70px;}
 .ai-result{display:none;}
 .ai-result.visible{display:block;}
 .result-name{font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:2px;}
+#result-name,#result-portion{border:1.5px dashed rgba(0,0,0,0.2);background:rgba(0,0,0,0.03);}
+#result-name:focus,#result-portion:focus{border-color:var(--green);background:#fff;}
+#result-name:hover,#result-portion:hover{border-color:var(--green);}
 .result-portion{font-size:0.75rem;color:var(--text3);margin-bottom:0.85rem;}
 
 /* MACRO PILLS */
 .macro-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4rem;margin-bottom:0.85rem;}
 .macro-pill{border-radius:var(--r-sm);padding:0.6rem 0.4rem;text-align:center;}
 .macro-pill .val{font-size:1.05rem;font-weight:700;display:block;line-height:1.1;}
+.macro-input{font-size:1.05rem;font-weight:700;display:block;line-height:1.1;width:100%;background:rgba(0,0,0,0.04);border:1.5px dashed rgba(0,0,0,0.2);border-radius:5px;text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;outline:none;cursor:text;}
+.macro-input:focus{border-color:var(--green);background:#fff;}
+.macro-input:hover{border-color:var(--green);background:rgba(45,106,79,0.05);}
 .macro-pill .lbl{font-size:0.58rem;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;margin-top:2px;display:block;}
 
 /* MEAL BUTTONS */
@@ -259,6 +265,15 @@ textarea.form-control{resize:vertical;min-height:70px;}
 .toggle-knob{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform 0.2s;}
 .toggle-switch.on .toggle-knob{transform:translateX(20px);}
 
+/* HISTORY DAY ROW */
+.hist-day-row{display:flex;align-items:center;padding:0.6rem 0.75rem;border-radius:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);}
+.hist-day-row:last-child{border-bottom:none;}
+.hist-day-row:hover{background:var(--bg3);}
+.hist-day-name{font-size:0.82rem;font-weight:600;color:var(--text);min-width:70px;}
+.hist-day-cal{font-size:0.82rem;font-weight:700;color:var(--amber);min-width:60px;}
+.hist-day-bar{flex:1;height:8px;background:var(--border);border-radius:99px;overflow:hidden;margin:0 0.5rem;}
+.hist-day-fill{height:100%;border-radius:99px;background:var(--green);transition:width 0.3s;}
+.hist-day-fill.over{background:#C0392B;}
 /* EXPORT BTN */
 .export-row{display:flex;gap:0.5rem;margin-top:0.5rem;}
 
@@ -338,6 +353,14 @@ textarea.form-control{resize:vertical;min-height:70px;}
       </div>
       <button class="btn btn-primary" onclick="addManual()">Add to Log</button>
     </div>
+    <!-- DATE PICKER FOR PAST ENTRIES -->
+    <div class="card" style="margin-bottom:0.75rem;padding:0.75rem 1rem;">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:0.8rem;color:var(--text3);white-space:nowrap;">Logging for:</span>
+        <input type="date" id="log-date" class="form-control" style="flex:1;font-size:0.85rem;padding:0.35rem 0.6rem;border-radius:6px;">
+        <button onclick="setLogDate('today')" style="font-size:0.72rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text3);cursor:pointer;white-space:nowrap;">Today</button>
+      </div>
+    </div>
     <!-- FAVOURITES QUICK ADD -->
     <div id="favs-panel" style="display:none;margin-bottom:0.75rem;">
       <div class="card" style="margin-bottom:0;">
@@ -351,24 +374,44 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="loading" id="loading"><div class="spinner"></div>Analyzing your food...</div>
     <div class="alert" id="log-alert"></div>
     <div class="ai-result card" id="ai-result" style="margin-top:0.75rem;">
-      <div class="result-name" id="result-name"></div>
-      <div class="result-portion" id="result-portion"></div>
+      <!-- EDITABLE FOOD NAME & PORTION -->
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:2px;">
+        <input type="text" id="result-name" class="form-control" style="font-size:1rem;font-weight:600;padding:0.35rem 0.6rem;border-radius:6px;" placeholder="Food name">
+        <span style="font-size:0.7rem;color:var(--text3);white-space:nowrap;flex-shrink:0;">✏️ tap to edit</span>
+      </div>
+      <input type="text" id="result-portion" class="form-control" style="font-size:0.78rem;color:var(--text3);padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.85rem;" placeholder="Portion size">
+      <!-- EDITABLE MACROS -->
       <div class="macro-grid">
-        <div class="macro-pill" style="background:rgba(146,96,10,0.1);"><span class="val" style="color:var(--amber);" id="r-cal">0</span><span class="lbl" style="color:var(--amber);">kcal</span></div>
-        <div class="macro-pill" style="background:rgba(45,106,79,0.1);"><span class="val" style="color:var(--green);" id="r-protein">0</span><span class="lbl" style="color:var(--green);">protein</span></div>
-        <div class="macro-pill" style="background:rgba(30,95,140,0.1);"><span class="val" style="color:var(--blue);" id="r-carbs">0</span><span class="lbl" style="color:var(--blue);">carbs</span></div>
-        <div class="macro-pill" style="background:rgba(192,86,33,0.1);"><span class="val" style="color:var(--orange);" id="r-fat">0</span><span class="lbl" style="color:var(--orange);">fat</span></div>
-        <div class="macro-pill" style="background:rgba(107,63,160,0.1);"><span class="val" style="color:var(--purple);" id="r-sugar">0</span><span class="lbl" style="color:var(--purple);">sugar</span></div>
+        <div class="macro-pill" style="background:rgba(146,96,10,0.1);">
+          <input type="number" id="r-cal" class="macro-input" style="color:var(--amber);" value="0" min="0">
+          <span class="lbl" style="color:var(--amber);">kcal</span>
+        </div>
+        <div class="macro-pill" style="background:rgba(45,106,79,0.1);">
+          <input type="number" id="r-protein" class="macro-input" style="color:var(--green);" value="0" min="0">
+          <span class="lbl" style="color:var(--green);">protein</span>
+        </div>
+        <div class="macro-pill" style="background:rgba(30,95,140,0.1);">
+          <input type="number" id="r-carbs" class="macro-input" style="color:var(--blue);" value="0" min="0">
+          <span class="lbl" style="color:var(--blue);">carbs</span>
+        </div>
+        <div class="macro-pill" style="background:rgba(192,86,33,0.1);">
+          <input type="number" id="r-fat" class="macro-input" style="color:var(--orange);" value="0" min="0">
+          <span class="lbl" style="color:var(--orange);">fat</span>
+        </div>
+        <div class="macro-pill" style="background:rgba(107,63,160,0.1);">
+          <input type="number" id="r-sugar" class="macro-input" style="color:var(--purple);" value="0" min="0">
+          <span class="lbl" style="color:var(--purple);">sugar</span>
+        </div>
       </div>
       <div id="result-note" style="font-size:0.8rem;color:var(--text3);margin-bottom:0.85rem;line-height:1.65;padding:0.6rem;background:var(--bg3);border-radius:var(--r-xs);"></div>
       <!-- PORTION ADJUSTER -->
       <div style="margin-bottom:0.75rem;">
         <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.4rem;">Adjust portion</div>
         <div class="portion-row">
-          <button class="portion-btn" onclick="adjustPortion(0.5)">−</button>
+          <button class="portion-btn" onclick="adjustPortion(-0.5)">−</button>
           <span class="portion-val" id="portion-mult">1×</span>
-          <button class="portion-btn" onclick="adjustPortion(1.5)">+</button>
-          <span style="font-size:0.78rem;color:var(--text3);">multiplier</span>
+          <button class="portion-btn" onclick="adjustPortion(0.5)">+</button>
+          <button class="portion-btn" onclick="resetPortion()" style="font-size:0.7rem;width:auto;padding:0 8px;">Reset</button>
         </div>
       </div>
       <div class="meal-row">
@@ -545,6 +588,12 @@ textarea.form-control{resize:vertical;min-height:70px;}
       </div>
     </div>
 
+    <!-- DAILY LOG LIST (clickable) -->
+    <div class="card" id="day-list-card">
+      <div class="card-title">Daily Log — tap a day for details</div>
+      <div id="history-day-list"></div>
+    </div>
+
     <!-- BEST DAY -->
     <div class="card" id="best-day-card" style="display:none;">
       <div class="card-title">Insights</div>
@@ -624,9 +673,36 @@ function profileCtx(){if(!state.profile)return'No profile set.';const p=state.pr
 function nutritionPrompt(){return`You are a certified nutrition expert. Analyze the food and return ONLY a raw JSON object with no markdown, no backticks, no explanation:\n{"name":"food name","portion":"estimated portion","calories":number,"protein":number,"carbs":number,"fat":number,"sugar":number,"fiber":number,"note":"2-3 sentence coaching note relevant to user goal"}\n${profileCtx()}\nBe precise. All numbers are grams. If multiple foods combine totals.`;}
 async function analyzePhoto(){if(!state.imageB64)return;showLoading(true);hideResult();setAlert('','');try{const text=await callGemini(state.apiKey,nutritionPrompt(),state.imageB64,state.imageMime);const json=JSON.parse(text.replace(/```json|```/g,'').trim());showResult(json);}catch(e){setAlert('Error: '+(e.message||'Could not analyze image'),'error');}showLoading(false);}
 async function analyzeDescription(){const desc=document.getElementById('food-description').value.trim();if(!desc){setAlert('Please describe what you ate.','error');return;}showLoading(true);hideResult();setAlert('','');try{const prompt=`The user ate: "${desc}". ${nutritionPrompt()}`;const text=await callGemini(state.apiKey,prompt,null,null);const json=JSON.parse(text.replace(/```json|```/g,'').trim());showResult(json);}catch(e){setAlert('Error: '+(e.message||'Analysis failed'),'error');}showLoading(false);}
-function showResult(json){state.pendingResult=json;document.getElementById('result-name').textContent=json.name||'Unknown food';document.getElementById('result-portion').textContent=json.portion||'';document.getElementById('r-cal').textContent=Math.round(json.calories||0);document.getElementById('r-protein').textContent=Math.round(json.protein||0);document.getElementById('r-carbs').textContent=Math.round(json.carbs||0);document.getElementById('r-fat').textContent=Math.round(json.fat||0);document.getElementById('r-sugar').textContent=Math.round(json.sugar||0);document.getElementById('result-note').textContent=json.note||'';document.getElementById('ai-result').classList.add('visible');}
+function showResult(json){
+  state.pendingResult=json;
+  document.getElementById('result-name').value=json.name||'Unknown food';
+  document.getElementById('result-portion').value=json.portion||'';
+  document.getElementById('r-cal').value=Math.round(json.calories||0);
+  document.getElementById('r-protein').value=Math.round(json.protein||0);
+  document.getElementById('r-carbs').value=Math.round(json.carbs||0);
+  document.getElementById('r-fat').value=Math.round(json.fat||0);
+  document.getElementById('r-sugar').value=Math.round(json.sugar||0);
+  document.getElementById('result-note').textContent=json.note||'';
+  document.getElementById('ai-result').classList.add('visible');
+}
 function hideResult(){document.getElementById('ai-result').classList.remove('visible');state.pendingResult=null;}
-function addToLog(){if(!state.pendingResult)return;state.log.push({...state.pendingResult,meal:document.getElementById('result-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();saveHistorySnapshot();setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);}
+function addToLog(){if(!state.pendingResult)return;
+  // Read potentially edited values from inputs
+  const entry = {
+    name: document.getElementById('result-name').value || state.pendingResult.name,
+    portion: document.getElementById('result-portion').value || state.pendingResult.portion,
+    calories: parseFloat(document.getElementById('r-cal').value) || 0,
+    protein: parseFloat(document.getElementById('r-protein').value) || 0,
+    carbs: parseFloat(document.getElementById('r-carbs').value) || 0,
+    fat: parseFloat(document.getElementById('r-fat').value) || 0,
+    sugar: parseFloat(document.getElementById('r-sugar').value) || 0,
+    fiber: state.pendingResult.fiber || 0,
+    note: state.pendingResult.note || '',
+    meal: document.getElementById('result-meal').value,
+    time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+    id: Date.now()
+  };
+  state.log.push(entry);save();saveHistorySnapshot();saveDetailHistory();setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);}
 function addManual(){const name=document.getElementById('manual-name').value.trim();if(!name){setAlert('Please enter a food name.','error');return;}state.log.push({name,portion:'Manual entry',calories:parseFloat(document.getElementById('m-cal').value)||0,protein:parseFloat(document.getElementById('m-protein').value)||0,carbs:parseFloat(document.getElementById('m-carbs').value)||0,fat:parseFloat(document.getElementById('m-fat').value)||0,sugar:parseFloat(document.getElementById('m-sugar').value)||0,fiber:parseFloat(document.getElementById('m-fiber').value)||0,meal:document.getElementById('m-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();setAlert('Added!','success');['manual-name','m-cal','m-protein','m-carbs','m-fat','m-sugar','m-fiber'].forEach(id=>document.getElementById(id).value='');setTimeout(()=>setAlert('',''),1800);}
 function removeEntry(id){state.log=state.log.filter(e=>e.id!==id);save();renderToday();}
 function clearLog(){if(confirm('Clear all entries?')){state.log=[];save();renderToday();}}
@@ -677,6 +753,88 @@ function checkInstallBanner(){if(localStorage.getItem('nl_installed'))document.g
 window.addEventListener('appinstalled',()=>{localStorage.setItem('nl_installed','1');dismissInstall();});
 function showLoading(v){document.getElementById('loading').classList.toggle('visible',v);}
 function setAlert(msg,type){const el=document.getElementById('log-alert');el.textContent=msg;el.className='alert'+(type?' '+type:'');}
+
+// ─── LOG DATE PICKER ───
+function initLogDate() {
+  const picker = document.getElementById('log-date');
+  if (!picker) return;
+  const saved = localStorage.getItem('nl_log_date') || new Date().toISOString().slice(0,10);
+  picker.value = saved;
+  picker.max = new Date().toISOString().slice(0,10);
+  picker.addEventListener('change', () => {
+    localStorage.setItem('nl_log_date', picker.value);
+    loadLogForDate(picker.value);
+  });
+  loadLogForDate(saved);
+}
+function setLogDate(val) {
+  const today = new Date().toISOString().slice(0,10);
+  const picker = document.getElementById('log-date');
+  if (picker) { picker.value = today; localStorage.setItem('nl_log_date', today); }
+  loadLogForDate(today);
+}
+function getLogDate() {
+  return localStorage.getItem('nl_log_date') || new Date().toISOString().slice(0,10);
+}
+function loadLogForDate(date) {
+  const today = new Date().toISOString().slice(0,10);
+  if (date === today) {
+    // Use live state.log
+    renderToday();
+    return;
+  }
+  // Load from history for past days
+  const hist = JSON.parse(localStorage.getItem('nl_history_detail') || '{}');
+  const dayLog = hist[date] || [];
+  state.log = dayLog;
+  save();
+  renderToday();
+}
+function saveDetailHistory() {
+  const date = getLogDate();
+  const hist = JSON.parse(localStorage.getItem('nl_history_detail') || '{}');
+  hist[date] = state.log;
+  localStorage.setItem('nl_history_detail', JSON.stringify(hist));
+}
+
+// ─── DAY DETAIL MODAL ───
+function openDayDetail(date, dayData) {
+  const overlay = document.getElementById('day-detail-overlay');
+  const title = document.getElementById('day-detail-title');
+  const summary = document.getElementById('day-detail-summary');
+  const meals = document.getElementById('day-detail-meals');
+
+  const dateObj = new Date(date + 'T12:00:00');
+  title.textContent = dateObj.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+
+  // Summary pills
+  summary.innerHTML = [
+    {label:'kcal', val: Math.round(dayData.calories), color:'var(--amber)'},
+    {label:'protein', val: Math.round(dayData.protein)+'g', color:'var(--green)'},
+    {label:'carbs', val: Math.round(dayData.carbs)+'g', color:'var(--blue)'},
+    {label:'fat', val: Math.round(dayData.fat)+'g', color:'var(--orange)'},
+  ].map(p => `<div style="padding:6px 12px;border-radius:20px;background:${p.color}18;font-size:0.8rem;font-weight:700;color:${p.color}">${p.val} <span style="font-weight:400;font-size:0.72rem;">${p.label}</span></div>`).join('');
+
+  // Meal detail from detail history
+  const hist = JSON.parse(localStorage.getItem('nl_history_detail') || '{}');
+  const dayLog = hist[date] || [];
+  if (dayLog.length) {
+    meals.innerHTML = '<div style="font-weight:600;margin-bottom:0.5rem;color:var(--text);">Meals logged:</div>' +
+      dayLog.map(e => `<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-weight:500;">${e.name}</div><div style="font-size:0.72rem;color:var(--text3);">${e.meal} · ${e.time||''}</div></div>
+        <div style="font-weight:700;color:var(--amber);">${Math.round(e.calories)} kcal</div>
+      </div>`).join('');
+  } else {
+    meals.innerHTML = '<p style="color:var(--text3);font-size:0.82rem;">No meal details saved for this day.</p>';
+  }
+
+  overlay.style.display = 'block';
+}
+function closeDayDetail(e) {
+  if (e.target === document.getElementById('day-detail-overlay')) {
+    document.getElementById('day-detail-overlay').style.display = 'none';
+  }
+}
 
 // ─── WATER TRACKER ───
 function initWater() {
@@ -795,12 +953,23 @@ function deleteFav(id) {
 // ─── PORTION ADJUSTER ───
 let portionMultiplier = 1;
 let baseResult = null;
-function adjustPortion(factor) {
+function resetPortion() {
+  if (!baseResult) return;
+  portionMultiplier = 1;
+  state.pendingResult = {...baseResult};
+  document.getElementById('portion-mult').textContent = '1×';
+  document.getElementById('r-cal').value = Math.round(baseResult.calories);
+  document.getElementById('r-protein').value = Math.round(baseResult.protein);
+  document.getElementById('r-carbs').value = Math.round(baseResult.carbs);
+  document.getElementById('r-fat').value = Math.round(baseResult.fat);
+  document.getElementById('r-sugar').value = Math.round(baseResult.sugar);
+}
+function adjustPortion(delta) {
   if (!state.pendingResult) return;
   if (!baseResult) baseResult = {...state.pendingResult};
-  portionMultiplier = Math.max(0.25, Math.min(4, portionMultiplier * factor));
+  portionMultiplier = Math.max(0.5, Math.min(4, portionMultiplier + delta));
   const mult = portionMultiplier;
-  const disp = mult % 1 === 0 ? mult + '×' : mult.toFixed(2) + '×';
+  const disp = mult % 1 === 0 ? mult + '×' : mult.toFixed(1) + '×';
   document.getElementById('portion-mult').textContent = disp;
   const scaled = {
     ...baseResult,
@@ -812,11 +981,11 @@ function adjustPortion(factor) {
     fiber: (baseResult.fiber||0) * mult
   };
   state.pendingResult = scaled;
-  document.getElementById('r-cal').textContent = Math.round(scaled.calories);
-  document.getElementById('r-protein').textContent = Math.round(scaled.protein);
-  document.getElementById('r-carbs').textContent = Math.round(scaled.carbs);
-  document.getElementById('r-fat').textContent = Math.round(scaled.fat);
-  document.getElementById('r-sugar').textContent = Math.round(scaled.sugar);
+  document.getElementById('r-cal').value = Math.round(scaled.calories);
+  document.getElementById('r-protein').value = Math.round(scaled.protein);
+  document.getElementById('r-carbs').value = Math.round(scaled.carbs);
+  document.getElementById('r-fat').value = Math.round(scaled.fat);
+  document.getElementById('r-sugar').value = Math.round(scaled.sugar);
 }
 // Reset portion when new result shown — patch showResult
 const _origShowResult = showResult;
@@ -965,6 +1134,7 @@ function nextOnboard() {
 initWater();
 loadNotifToggles();
 showOnboarding();
+initLogDate();
 
 </script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
@@ -1131,6 +1301,25 @@ function renderHistory() {
   document.getElementById('avg-fat').textContent     = avg('fat')     ? avg('fat')+'g'     : '—';
   document.getElementById('avg-sugar').textContent   = avg('sugar')   ? avg('sugar')+'g'   : '—';
 
+  // ── DAY LIST ──
+  const dayListEl = document.getElementById('history-day-list');
+  if (dayListEl) {
+    const tgtCal = tgt.calories;
+    const sortedData = [...data].reverse();
+    dayListEl.innerHTML = sortedData.filter(d => d.calories > 0).map(d => {
+      const pct = Math.min(100, Math.round((d.calories / tgtCal) * 100));
+      const over = d.calories > tgtCal;
+      const dateObj = new Date(d.date + 'T12:00:00');
+      const label = dateObj.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+      return `<div class="hist-day-row" onclick="openDayDetail('${d.date}', ${JSON.stringify(d)})">
+        <span class="hist-day-name">${label}</span>
+        <span class="hist-day-cal">${Math.round(d.calories)}</span>
+        <div class="hist-day-bar"><div class="hist-day-fill ${over?'over':''}" style="width:${pct}%"></div></div>
+        <span style="font-size:0.72rem;color:${over?'#C0392B':'var(--text3)'};">${pct}%</span>
+      </div>`;
+    }).join('') || '<p style="font-size:0.82rem;color:var(--text3);text-align:center;padding:1rem;">No data yet for this period</p>';
+  }
+
   // ── INSIGHTS ──
   if (activeDays.length > 0) {
     document.getElementById('best-day-card').style.display = 'block';
@@ -1153,6 +1342,17 @@ function renderHistory() {
 }
 </script>
 
+<!-- DAY DETAIL MODAL -->
+<div id="day-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;padding:1rem;overflow-y:auto;" onclick="closeDayDetail(event)">
+  <div style="background:#fff;border-radius:16px;max-width:420px;margin:2rem auto;padding:1.5rem;" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div style="font-size:1rem;font-weight:700;color:var(--text);" id="day-detail-title"></div>
+      <button onclick="document.getElementById('day-detail-overlay').style.display='none'" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div id="day-detail-summary" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;"></div>
+    <div id="day-detail-meals" style="font-size:0.85rem;color:var(--text2);"></div>
+  </div>
+</div>
 <!-- ONBOARDING -->
 <div class="onboard-overlay" id="onboard-overlay" style="display:none;">
   <div class="onboard-card">
