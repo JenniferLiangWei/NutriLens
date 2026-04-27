@@ -671,8 +671,28 @@ function readFile(file){
 function clearImage(){state.imageB64=null;document.getElementById('preview-wrap').style.display='none';document.getElementById('upload-zone').style.display='block';document.querySelectorAll('.camera-row')[0].style.display='grid';document.getElementById('analyze-btn').disabled=true;document.getElementById('file-input').value='';document.getElementById('camera-input').value='';hideResult();}
 function profileCtx(){if(!state.profile)return'No profile set.';const p=state.profile;return`User: age ${p.age||'?'}, ${p.sex||'?'}, ${p.weight||'?'}kg, goal: ${p.goal}. Notes: ${p.notes||'none'}.`;}
 function nutritionPrompt(){return`You are a certified nutrition expert. Analyze the food and return ONLY a raw JSON object with no markdown, no backticks, no explanation:\n{"name":"food name","portion":"estimated portion","calories":number,"protein":number,"carbs":number,"fat":number,"sugar":number,"fiber":number,"note":"2-3 sentence coaching note relevant to user goal"}\n${profileCtx()}\nBe precise. All numbers are grams. If multiple foods combine totals.`;}
-async function analyzePhoto(){if(!state.imageB64)return;showLoading(true);hideResult();setAlert('','');try{const text=await callGemini(state.apiKey,nutritionPrompt(),state.imageB64,state.imageMime);const json=JSON.parse(text.replace(/```json|```/g,'').trim());showResult(json);}catch(e){setAlert('Error: '+(e.message||'Could not analyze image'),'error');}showLoading(false);}
-async function analyzeDescription(){const desc=document.getElementById('food-description').value.trim();if(!desc){setAlert('Please describe what you ate.','error');return;}showLoading(true);hideResult();setAlert('','');try{const prompt=`The user ate: "${desc}". ${nutritionPrompt()}`;const text=await callGemini(state.apiKey,prompt,null,null);const json=JSON.parse(text.replace(/```json|```/g,'').trim());showResult(json);}catch(e){setAlert('Error: '+(e.message||'Analysis failed'),'error');}showLoading(false);}
+function extractJSON(text) {
+  // Remove markdown code blocks
+  let clean = text.replace(/```json|```/gi, '').trim();
+  // Try direct parse first
+  try { return JSON.parse(clean); } catch(e) {}
+  // Try to find JSON object in the text
+  const match = clean.match(/\{[\s\S]*\}/);
+  if (match) {
+    try { return JSON.parse(match[0]); } catch(e) {}
+  }
+  // Try fixing common issues: trailing commas, single quotes
+  try {
+    const fixed = clean
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/'/g, '"');
+    return JSON.parse(fixed);
+  } catch(e) {}
+  throw new Error('Could not parse AI response as JSON');
+}
+async function analyzePhoto(){if(!state.imageB64)return;showLoading(true);hideResult();setAlert('','');try{const text=await callGemini(state.apiKey,nutritionPrompt(),state.imageB64,state.imageMime);const json=extractJSON(text);showResult(json);}catch(e){setAlert('Error: '+(e.message||'Could not analyze image'),'error');}showLoading(false);}
+async function analyzeDescription(){const desc=document.getElementById('food-description').value.trim();if(!desc){setAlert('Please describe what you ate.','error');return;}showLoading(true);hideResult();setAlert('','');try{const prompt=`The user ate: "${desc}". ${nutritionPrompt()}`;const text=await callGemini(state.apiKey,prompt,null,null);const json=extractJSON(text);showResult(json);}catch(e){setAlert('Error: '+(e.message||'Analysis failed'),'error');}showLoading(false);}
 function showResult(json){
   state.pendingResult=json;
   document.getElementById('result-name').value=json.name||'Unknown food';
