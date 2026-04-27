@@ -28,16 +28,26 @@ export default async function handler(req, res) {
     }
     parts.push({ text: prompt });
 
-    const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    // 2.5 models support vision; try them first
+    const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
     let lastError = null;
 
     for (const model of models) {
       try {
         const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+        
+        const body = {
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 1024
+          }
+        };
+
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }] })
+          body: JSON.stringify(body)
         });
 
         const data = await response.json();
