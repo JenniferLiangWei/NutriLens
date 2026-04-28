@@ -805,6 +805,7 @@ function addToLog(){if(!state.pendingResult)return;
     time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
     id: Date.now()
   };
+  console.log('[NutriLens] addToLog: selectedDate=' + selectedDate + ' today=' + today);
   if(selectedDate !== today) {
     // Save to past date history directly
     const hist = JSON.parse(localStorage.getItem('nl_history_detail') || '{}');
@@ -817,11 +818,15 @@ function addToLog(){if(!state.pendingResult)return;
     const t = dayLog.reduce((acc,e)=>{acc.calories+=(e.calories||0);acc.protein+=(e.protein||0);acc.carbs+=(e.carbs||0);acc.fat+=(e.fat||0);acc.sugar+=(e.sugar||0);acc.fiber+=(e.fiber||0);return acc;},{calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0});
     hTotals[selectedDate] = {...t, date:selectedDate};
     localStorage.setItem('nl_history', JSON.stringify(hTotals));
-    setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);
+    setAlert('Saved to ' + selectedDate + ' (in History)','success');
+    hideResult();clearImage();document.getElementById('food-description').value='';
+    setTimeout(()=>setAlert('',''),3000);
   } else {
     // Save to today's log normally
     state.log.push(entry);save();saveHistorySnapshot();saveDetailHistory();
-    setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);
+    setAlert('Added to today!','success');
+    hideResult();clearImage();document.getElementById('food-description').value='';
+    setTimeout(()=>setAlert('',''),2000);
   }
 }
 function addManual(){const name=document.getElementById('manual-name').value.trim();if(!name){setAlert('Please enter a food name.','error');return;}state.log.push({name,portion:'Manual entry',calories:parseFloat(document.getElementById('m-cal').value)||0,protein:parseFloat(document.getElementById('m-protein').value)||0,carbs:parseFloat(document.getElementById('m-carbs').value)||0,fat:parseFloat(document.getElementById('m-fat').value)||0,sugar:parseFloat(document.getElementById('m-sugar').value)||0,fiber:parseFloat(document.getElementById('m-fiber').value)||0,meal:document.getElementById('m-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();setAlert('Added!','success');['manual-name','m-cal','m-protein','m-carbs','m-fat','m-sugar','m-fiber'].forEach(id=>document.getElementById(id).value='');setTimeout(()=>setAlert('',''),1800);}
@@ -920,10 +925,13 @@ function setLogDate(val) {
   loadLogForDate(today);
 }
 function getLogDate() {
-  // Read directly from the visible picker, not localStorage
+  // ALWAYS read from the visible picker DOM element
   const picker = document.getElementById('log-date');
-  if (picker && picker.value) return picker.value;
-  return localStorage.getItem('nl_log_date') || new Date().toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0,10);
+  if (picker && picker.value && picker.value.length === 10) {
+    return picker.value;
+  }
+  return today;
 }
 function loadLogForDate(date) {
   const today = new Date().toISOString().slice(0,10);
