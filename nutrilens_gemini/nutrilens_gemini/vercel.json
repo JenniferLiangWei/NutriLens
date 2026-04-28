@@ -1,7 +1,8 @@
-[build]
-  functions = "netlify/functions"
-
-[[redirects]]
-  from = "/api/gemini"
-  to = "/.netlify/functions/gemini"
-  status = 200
+{
+  "functions": {
+    "api/gemini.js": {
+      "memory": 256,
+      "maxDuration": 30
+    }
+  }
+}
