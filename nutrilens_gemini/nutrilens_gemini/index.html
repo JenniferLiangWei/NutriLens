@@ -635,6 +635,24 @@ function init(){
   renderToday();checkInstallBanner();
 }
 checkSetup();
+function compressImage(dataUrl, maxSize, quality, callback) {
+  const img = new Image();
+  img.onload = function() {
+    let w = img.width, h = img.height;
+    // Scale down if larger than maxSize
+    if (w > maxSize || h > maxSize) {
+      if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+      else { w = Math.round(w * maxSize / h); h = maxSize; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
 async function callGemini(key,prompt,imageB64,imageMime){
   const res=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,imageB64:imageB64||null,imageMime:imageMime||null})});
   const data=await res.json();
@@ -665,7 +683,19 @@ function handleDrop(e){e.preventDefault();document.getElementById('upload-zone')
 function readFile(file){
   state.imageMime=file.type||'image/jpeg';
   const reader=new FileReader();
-  reader.onload=ev=>{const data=ev.target.result;state.imageB64=data.split(',')[1];document.getElementById('preview-img').src=data;document.getElementById('preview-wrap').style.display='block';document.getElementById('upload-zone').style.display='none';document.querySelectorAll('.camera-row')[0].style.display='none';document.getElementById('analyze-btn').disabled=false;};
+  reader.onload=ev=>{
+    const data=ev.target.result;
+    // Compress image before storing
+    compressImage(data, 1024, 0.7, (compressed) => {
+      state.imageB64=compressed.split(',')[1];
+      state.imageMime='image/jpeg';
+      document.getElementById('preview-img').src=compressed;
+      document.getElementById('preview-wrap').style.display='block';
+      document.getElementById('upload-zone').style.display='none';
+      document.querySelectorAll('.camera-row')[0].style.display='none';
+      document.getElementById('analyze-btn').disabled=false;
+    });
+  };
   reader.readAsDataURL(file);
 }
 function clearImage(){state.imageB64=null;document.getElementById('preview-wrap').style.display='none';document.getElementById('upload-zone').style.display='block';document.querySelectorAll('.camera-row')[0].style.display='grid';document.getElementById('analyze-btn').disabled=true;document.getElementById('file-input').value='';document.getElementById('camera-input').value='';hideResult();}
