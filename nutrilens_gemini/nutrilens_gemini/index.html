@@ -967,6 +967,11 @@ function saveDetailHistory() {
 
 // ─── DAY DETAIL MODAL ───
 function openDayDetail(date, dayData) {
+  // If dayData not passed, look it up from history
+  if (!dayData) {
+    const hist = JSON.parse(localStorage.getItem('nl_history') || '{}');
+    dayData = hist[date] || {calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,date:date};
+  }
   const overlay = document.getElementById('day-detail-overlay');
   const title = document.getElementById('day-detail-title');
   const summary = document.getElementById('day-detail-summary');
@@ -1479,7 +1484,8 @@ function renderHistory() {
       const over = d.calories > tgtCal;
       const dateObj = new Date(d.date + 'T12:00:00');
       const label = dateObj.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
-      return `<div class="hist-day-row" onclick="openDayDetail('${d.date}', ${JSON.stringify(d)})">
+      const dataStr = JSON.stringify(d).replace(/"/g, '&quot;');
+      return `<div class="hist-day-row" onclick='openDayDetail("${d.date}")'>
         <span class="hist-day-name">${label}</span>
         <span class="hist-day-cal">${Math.round(d.calories)}</span>
         <div class="hist-day-bar"><div class="hist-day-fill ${over?'over':''}" style="width:${pct}%"></div></div>
