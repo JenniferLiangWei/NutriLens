@@ -789,7 +789,8 @@ function showResult(json){
 }
 function hideResult(){document.getElementById('ai-result').classList.remove('visible');state.pendingResult=null;}
 function addToLog(){if(!state.pendingResult)return;
-  // Read potentially edited values from inputs
+  const selectedDate = getLogDate();
+  const today = new Date().toISOString().slice(0,10);
   const entry = {
     name: document.getElementById('result-name').value || state.pendingResult.name,
     portion: document.getElementById('result-portion').value || state.pendingResult.portion,
@@ -804,7 +805,25 @@ function addToLog(){if(!state.pendingResult)return;
     time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
     id: Date.now()
   };
-  state.log.push(entry);save();saveHistorySnapshot();saveDetailHistory();setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);}
+  if(selectedDate !== today) {
+    // Save to past date history directly
+    const hist = JSON.parse(localStorage.getItem('nl_history_detail') || '{}');
+    const dayLog = hist[selectedDate] || [];
+    dayLog.push(entry);
+    hist[selectedDate] = dayLog;
+    localStorage.setItem('nl_history_detail', JSON.stringify(hist));
+    // Update daily totals
+    const hTotals = JSON.parse(localStorage.getItem('nl_history') || '{}');
+    const t = dayLog.reduce((acc,e)=>{acc.calories+=(e.calories||0);acc.protein+=(e.protein||0);acc.carbs+=(e.carbs||0);acc.fat+=(e.fat||0);acc.sugar+=(e.sugar||0);acc.fiber+=(e.fiber||0);return acc;},{calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0});
+    hTotals[selectedDate] = {...t, date:selectedDate};
+    localStorage.setItem('nl_history', JSON.stringify(hTotals));
+    setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);
+  } else {
+    // Save to today's log normally
+    state.log.push(entry);save();saveHistorySnapshot();saveDetailHistory();
+    setAlert('Added to log!','success');hideResult();clearImage();document.getElementById('food-description').value='';setTimeout(()=>setAlert('',''),2000);
+  }
+}
 function addManual(){const name=document.getElementById('manual-name').value.trim();if(!name){setAlert('Please enter a food name.','error');return;}state.log.push({name,portion:'Manual entry',calories:parseFloat(document.getElementById('m-cal').value)||0,protein:parseFloat(document.getElementById('m-protein').value)||0,carbs:parseFloat(document.getElementById('m-carbs').value)||0,fat:parseFloat(document.getElementById('m-fat').value)||0,sugar:parseFloat(document.getElementById('m-sugar').value)||0,fiber:parseFloat(document.getElementById('m-fiber').value)||0,meal:document.getElementById('m-meal').value,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});save();setAlert('Added!','success');['manual-name','m-cal','m-protein','m-carbs','m-fat','m-sugar','m-fiber'].forEach(id=>document.getElementById(id).value='');setTimeout(()=>setAlert('',''),1800);}
 function removeEntry(id){state.log=state.log.filter(e=>e.id!==id);save();renderToday();}
 function clearLog(){if(confirm('Clear all entries?')){state.log=[];save();renderToday();}}
