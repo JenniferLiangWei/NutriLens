@@ -920,6 +920,9 @@ function setLogDate(val) {
   loadLogForDate(today);
 }
 function getLogDate() {
+  // Read directly from the visible picker, not localStorage
+  const picker = document.getElementById('log-date');
+  if (picker && picker.value) return picker.value;
   return localStorage.getItem('nl_log_date') || new Date().toISOString().slice(0,10);
 }
 function loadLogForDate(date) {
