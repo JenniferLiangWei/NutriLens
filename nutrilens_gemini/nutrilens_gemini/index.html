@@ -623,8 +623,33 @@ textarea.form-control{resize:vertical;min-height:70px;}
 <script>
 let state={apiKey:'',profile:null,targets:null,log:[],pendingResult:null,imageB64:null,imageMime:'image/jpeg'};
 let deferredInstall=null;
-function save(){try{localStorage.setItem('nl_state',JSON.stringify({profile:state.profile,targets:state.targets,log:state.log,apiKey:state.apiKey}));}catch(e){}}
+function save(){try{localStorage.setItem('nl_state',JSON.stringify({profile:state.profile,targets:state.targets,log:state.log,apiKey:state.apiKey,logDate:new Date().toISOString().slice(0,10)}));}catch(e){}}
 function load(){try{const s=localStorage.getItem('nl_state');if(s){const d=JSON.parse(s);Object.assign(state,d);}}catch(e){}}
+function checkNewDay(){
+  const today=new Date().toISOString().slice(0,10);
+  try{
+    const s=localStorage.getItem('nl_state');
+    if(s){
+      const d=JSON.parse(s);
+      const logDate=d.logDate||today;
+      if(logDate!==today && d.log && d.log.length>0){
+        // Save yesterday's data to history before clearing
+        const hist=JSON.parse(localStorage.getItem('nl_history')||'{}');
+        const totals=d.log.reduce((acc,e)=>{acc.calories+=(e.calories||0);acc.protein+=(e.protein||0);acc.carbs+=(e.carbs||0);acc.fat+=(e.fat||0);acc.sugar+=(e.sugar||0);acc.fiber+=(e.fiber||0);return acc;},{calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0});
+        hist[logDate]={...totals,date:logDate};
+        localStorage.setItem('nl_history',JSON.stringify(hist));
+        // Also save detail history
+        const dHist=JSON.parse(localStorage.getItem('nl_history_detail')||'{}');
+        dHist[logDate]=d.log;
+        localStorage.setItem('nl_history_detail',JSON.stringify(dHist));
+        // Clear today's log
+        state.log=[];
+        save();
+        console.log('New day detected - cleared log and saved history for '+logDate);
+      }
+    }
+  }catch(e){console.error('checkNewDay error:',e);}
+}
 load();
 function checkSetup(){init();}
 function verifyKey(){init();}
@@ -759,7 +784,10 @@ function clearLog(){if(confirm('Clear all entries?')){state.log=[];save();render
 function getTotals(){return state.log.reduce((a,e)=>({calories:a.calories+(e.calories||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0)}),{calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0});}
 function renderToday(){
   initWater();
-  const t=getTotals();const tgt=state.targets||{calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
+  const t=getTotals();
+  // Debug: log totals
+  console.log('Totals:', t, 'Log entries:', state.log.length);
+  const tgt=state.targets||{calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
   document.getElementById('t-protein').textContent=Math.round(t.protein)+'g';
   document.getElementById('t-carbs').textContent=Math.round(t.carbs)+'g';
   document.getElementById('t-fat').textContent=Math.round(t.fat)+'g';
@@ -941,6 +969,8 @@ if (lastWaterDate !== today) {
   localStorage.setItem('nl_water', '0');
   localStorage.setItem('nl_water_date', today);
 }
+// Store today's date separately as a quick reference
+localStorage.setItem('nl_current_date', today);
 
 // ─── FAVOURITES ───
 function getFavourites() {
