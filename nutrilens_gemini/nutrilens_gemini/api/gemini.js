@@ -50,7 +50,15 @@ export default async function handler(req, res) {
           body: JSON.stringify(body)
         });
 
-        const data = await response.json();
+        // Always try to parse as JSON first
+        let data;
+        const responseText = await response.text();
+        try {
+          data = JSON.parse(responseText);
+        } catch(e) {
+          lastError = 'Invalid response from Google: ' + responseText.slice(0, 100);
+          continue;
+        }
 
         if (!response.ok) {
           lastError = data?.error?.message || 'HTTP ' + response.status;
