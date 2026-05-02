@@ -1318,8 +1318,10 @@ function deleteFav(id) {
 }
 
 // ─── PORTION ADJUSTER ───
-let portionMultiplier = 1;
-let baseResult = null;
+// Note: using `var` (not `let`) intentionally to avoid Temporal Dead Zone issues
+// when these are accessed from async functions like recalculateMacros().
+var portionMultiplier = 1;
+var baseResult = null;
 function resetPortion() {
   if (!baseResult) return;
   portionMultiplier = 1;
