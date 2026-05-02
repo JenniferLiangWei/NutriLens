@@ -862,6 +862,11 @@ ${profileCtx()}
 
 All macros in grams (calories in kcal). The "portion" field should list each visible item with its estimated quantity. The macro totals must equal the sum across all items.
 
+ZERO HANDLING — IMPORTANT:
+- Sugar must be 0 for foods that contain no meaningful sugar: plain eggs, plain meat/poultry/fish, oils, butter, plain coffee/tea/water, herbs, spices, salt, plain low-sugar vegetables like cucumber/lettuce/spinach. Only count NATURAL sugars (fruits, dairy, some vegetables like carrots/onions) or ADDED sugars (baked goods, sweetened drinks, sauces, candy).
+- Fiber must be 0 for foods that contain no fiber: eggs, dairy, plain meat/poultry/fish, oils, butter, coffee, tea, water. Only plant foods have meaningful fiber.
+- When a value would round to less than 0.5g, output 0, not 1. Do NOT add small "safety" values to fields that should be zero.
+
 LANGUAGE NOTE: User input may contain typos or be in English, Finnish, or other languages. Interpret charitably (e.g. "excercises" → "exercises", "chiken" → "chicken", "kahvi" → "coffee"). Always reply in English.`;}
 function extractJSON(text) {
   if (!text || !text.trim()) throw new Error('Empty response from AI');
@@ -1494,6 +1499,11 @@ Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
 {"name":"clean food name","portion":"clear portion description","calories":number,"protein":number,"carbs":number,"fat":number,"sugar":number,"fiber":number,"note":"2-3 sentence personalized coaching note relevant to user's goal"}
 
 All macros in grams, calories in kcal.
+
+ZERO HANDLING — IMPORTANT:
+- Sugar must be 0 for foods with no meaningful sugar (plain eggs, plain meats, fish, oils, butter, coffee, tea, water, herbs/spices, leafy vegetables). Only count natural sugars (fruit, dairy, sweet vegetables) or added sugars (baked goods, sweetened drinks, sauces).
+- Fiber must be 0 for animal products and oils. Only plant foods have fiber.
+- When a value would round to less than 0.5g, output 0, not 1. Never add small "safety" values to zero-fields.
 
 LANGUAGE NOTE: The user's correction may contain typos or be in English, Finnish, or other languages. Interpret charitably (e.g. "excercises" → "exercises", "chiken" → "chicken", "kahvi" → "coffee"). Always reply in English.`;
 }
