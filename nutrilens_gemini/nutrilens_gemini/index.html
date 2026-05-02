@@ -996,23 +996,49 @@ async function analyzeDescription(){
   setAlert('Error: '+(lastError?.message||'Analysis failed')+' — try again with simpler wording.','error');
   showLoading(false);
 }
-// ─── NET CARBS HELPER (Round 7) ───
+// ─── NET CARBS HELPER (Round 7 + Round 8 smart toggle) ───
 // Net carbs = total carbs - fiber. Reflects what your body actually absorbs as energy.
-// We show this annotation only when fiber > 0 and meaningfully different from total carbs,
-// so eggs/meat (carbs=0, fiber=0) and sugar drinks (carbs=20, fiber=0) don't display it.
+//
+// SMART DISPLAY (Round 8 - Option B):
+// 1. fiber == 0 OR carbs == 0 → hide net carbs annotation entirely (eggs, meat, oils, sugary drinks).
+// 2. fiber ≥ 80% of carbs → "essentially pure fiber" supplement.
+//    Hide the regular Carbs pill; show ONLY Net Carbs.
+//    The display reads: "Net carbs: 0g · Total carbs: 5g (all fiber)" — clean and honest.
+// 3. fiber < 80% of carbs → mixed food (oats, vegetables, fruits).
+//    Keep BOTH visible: regular Carbs pill stays as the main number, Net Carbs shown as annotation.
+//    Both numbers are meaningful here so we keep them visible.
 function updateNetCarbs() {
   const row = document.getElementById('r-net-carbs-row');
   const valEl = document.getElementById('r-net-carbs-val');
+  const carbsPill = document.getElementById('r-carbs')?.closest('.macro-pill');
   if (!row || !valEl) return;
   const carbs = parseFloat(document.getElementById('r-carbs')?.value) || 0;
   const fiber = parseFloat(document.getElementById('r-fiber')?.value) || 0;
+
+  // Case 1: nothing meaningful to show
   if (fiber <= 0 || carbs <= 0) {
     row.style.display = 'none';
+    if (carbsPill) carbsPill.style.display = '';
     return;
   }
+
   const net = Math.max(0, carbs - fiber);
+  const fiberRatio = fiber / carbs;
+
+  // Case 2: essentially pure fiber (≥80% fiber by carbs) → show only Net Carbs
+  if (fiberRatio >= 0.8) {
+    valEl.textContent = Math.round(net);
+    row.innerHTML = `<span style="color:var(--blue);font-weight:600;">↳ Net carbs: <span id="r-net-carbs-val">${Math.round(net)}</span>g</span> <span style="color:var(--text3);">(carbs almost entirely fiber — minimal energy absorbed)</span>`;
+    row.style.display = 'block';
+    if (carbsPill) carbsPill.style.display = 'none';
+    return;
+  }
+
+  // Case 3: mixed food → show both
   valEl.textContent = Math.round(net);
+  row.innerHTML = `<span style="color:var(--blue);font-weight:600;">↳ Net carbs: <span id="r-net-carbs-val">${Math.round(net)}</span>g</span> <span style="color:var(--text3);">(carbs − fiber, the carbs your body actually absorbs as energy)</span>`;
   row.style.display = 'block';
+  if (carbsPill) carbsPill.style.display = '';
 }
 
 function showResult(json){
@@ -1087,13 +1113,25 @@ function renderToday(){
   const effectiveGoal=adjustEnabled?(tgt.calories+Math.round(exTotals.caloriesBurned)):tgt.calories;
   document.getElementById('t-protein').textContent=Math.round(t.protein)+'g';
   document.getElementById('t-carbs').textContent=Math.round(t.carbs)+'g';
-  // Net carbs sublabel — show only when fiber is substantial enough to matter
+  // Net carbs sublabel — Option B smart display (Round 8)
   const netCarbsSubEl = document.getElementById('t-carbs-net');
   const netCarbsValEl = document.getElementById('t-net-carbs-val');
-  if (netCarbsSubEl && netCarbsValEl) {
+  const tCarbsValEl = document.getElementById('t-carbs');
+  if (netCarbsSubEl && netCarbsValEl && tCarbsValEl) {
     if (t.fiber > 0 && t.carbs > 0) {
-      netCarbsValEl.textContent = Math.round(Math.max(0, t.carbs - t.fiber));
-      netCarbsSubEl.style.display = 'block';
+      const netVal = Math.round(Math.max(0, t.carbs - t.fiber));
+      const fiberRatio = t.fiber / t.carbs;
+      if (fiberRatio >= 0.8) {
+        // Essentially pure-fiber day intake → swap the main number to net
+        tCarbsValEl.textContent = netVal + 'g';
+        netCarbsSubEl.innerHTML = '<span style="color:var(--text3);">net (mostly fiber)</span>';
+        netCarbsSubEl.style.display = 'flex';
+      } else {
+        // Mixed → show both
+        netCarbsValEl.textContent = netVal;
+        netCarbsSubEl.innerHTML = 'net: <span id="t-net-carbs-val">' + netVal + '</span>g';
+        netCarbsSubEl.style.display = 'flex';
+      }
     } else {
       netCarbsSubEl.style.display = 'none';
     }
@@ -1396,15 +1434,19 @@ function saveFavourites(favs) {
 function saveFavourite() {
   if (!state.pendingResult) return;
   const favs = getFavourites();
+  // Round 8: read from the editable pills, so any edits the user made
+  // (e.g. correcting calories from 10 to 2) are preserved in the favourite.
+  const editedName = document.getElementById('result-name').value.trim() || state.pendingResult.name;
+  const editedPortion = document.getElementById('result-portion').value.trim() || state.pendingResult.portion;
   const item = {
-    name: state.pendingResult.name,
-    portion: state.pendingResult.portion,
-    calories: state.pendingResult.calories,
-    protein: state.pendingResult.protein,
-    carbs: state.pendingResult.carbs,
-    fat: state.pendingResult.fat,
-    sugar: state.pendingResult.sugar,
-    fiber: state.pendingResult.fiber,
+    name: editedName,
+    portion: editedPortion,
+    calories: parseFloat(document.getElementById('r-cal').value) || 0,
+    protein: parseFloat(document.getElementById('r-protein').value) || 0,
+    carbs: parseFloat(document.getElementById('r-carbs').value) || 0,
+    fat: parseFloat(document.getElementById('r-fat').value) || 0,
+    sugar: parseFloat(document.getElementById('r-sugar').value) || 0,
+    fiber: parseFloat(document.getElementById('r-fiber').value) || 0,
     id: Date.now()
   };
   if (!favs.find(f => f.name.toLowerCase() === item.name.toLowerCase())) {
@@ -2500,15 +2542,25 @@ function renderHistory() {
   document.getElementById('avg-cal').textContent    = avg('calories') || '—';
   document.getElementById('avg-protein').textContent = avg('protein') ? avg('protein')+'g' : '—';
   document.getElementById('avg-carbs').textContent   = avg('carbs')   ? avg('carbs')+'g'   : '—';
-  // Net carbs sublabel for averages (Round 7) — only show when fiber meaningfully affects carbs
+  // Net carbs sublabel for averages — Option B smart display (Round 8)
   const avgFiber = avg('fiber') || 0;
   const avgCarbsRaw = avg('carbs') || 0;
   const avgNetCarbsSubEl = document.getElementById('avg-carbs-net');
-  const avgNetCarbsValEl = document.getElementById('avg-net-carbs-val');
-  if (avgNetCarbsSubEl && avgNetCarbsValEl) {
+  const avgCarbsValEl = document.getElementById('avg-carbs');
+  if (avgNetCarbsSubEl && avgCarbsValEl) {
     if (avgFiber > 0 && avgCarbsRaw > 0) {
-      avgNetCarbsValEl.textContent = Math.round(Math.max(0, avgCarbsRaw - avgFiber));
-      avgNetCarbsSubEl.style.display = 'flex';
+      const netVal = Math.round(Math.max(0, avgCarbsRaw - avgFiber));
+      const fiberRatio = avgFiber / avgCarbsRaw;
+      if (fiberRatio >= 0.8) {
+        // Essentially pure-fiber average intake → swap the main number to net
+        avgCarbsValEl.textContent = netVal + 'g';
+        avgNetCarbsSubEl.innerHTML = '<span style="color:var(--text3);">net (mostly fiber)</span>';
+        avgNetCarbsSubEl.style.display = 'flex';
+      } else {
+        // Mixed → show both
+        avgNetCarbsSubEl.innerHTML = 'net: <span id="avg-net-carbs-val">' + netVal + '</span>g';
+        avgNetCarbsSubEl.style.display = 'flex';
+      }
     } else {
       avgNetCarbsSubEl.style.display = 'none';
     }
