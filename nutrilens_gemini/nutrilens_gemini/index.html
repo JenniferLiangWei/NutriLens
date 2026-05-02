@@ -142,7 +142,8 @@ textarea.form-control{resize:vertical;min-height:70px;}
 .result-portion{font-size:0.75rem;color:var(--text3);margin-bottom:0.85rem;}
 
 /* MACRO PILLS */
-.macro-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4rem;margin-bottom:0.85rem;}
+.macro-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:0.3rem;margin-bottom:0.85rem;}
+@media (max-width:480px){.macro-grid{grid-template-columns:repeat(3,1fr);gap:0.3rem;}}
 .macro-pill{border-radius:var(--r-sm);padding:0.6rem 0.4rem;text-align:center;}
 .macro-pill .val{font-size:1.05rem;font-weight:700;display:block;line-height:1.1;}
 .macro-input{font-size:1.05rem;font-weight:700;display:block;line-height:1.1;width:100%;background:rgba(0,0,0,0.04);border:1.5px dashed rgba(0,0,0,0.2);border-radius:5px;text-align:center;font-family:'Outfit',sans-serif;padding:2px 4px;outline:none;cursor:text;}
@@ -165,7 +166,8 @@ textarea.form-control{resize:vertical;min-height:70px;}
 
 /* STAT ROW */
 .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4rem;margin-bottom:0.75rem;}
-.stat-box{background:var(--bg3);border-radius:var(--r-sm);padding:0.65rem 0.4rem;text-align:center;}
+.stat-box{background:var(--bg3);border-radius:var(--r-sm);padding:0.65rem 0.4rem;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.stat-sublbl{font-size:0.62rem;color:var(--text3);margin-top:2px;}
 .stat-val{font-size:1rem;font-weight:700;display:block;}
 .stat-lbl{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);display:block;margin-top:2px;}
 
@@ -297,6 +299,14 @@ textarea.form-control{resize:vertical;min-height:70px;}
 .ex-modal-title{font-size:1rem;font-weight:700;color:var(--text);}
 .ex-modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text3);padding:0;}
 
+/* QUICK-ADD FAVOURITES STRIP (Round 5) */
+#quick-favs-list{display:flex;flex-wrap:wrap;gap:0.4rem;}
+.quick-fav-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;font-family:'Outfit',sans-serif;color:var(--text2);transition:all 0.15s;font-size:0.75rem;}
+.quick-fav-chip:hover{border-color:var(--green);color:var(--green);background:rgba(45,106,79,0.05);}
+.quick-fav-icon{font-size:0.95rem;line-height:1;}
+.quick-fav-name{font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.quick-fav-val{font-size:0.68rem;color:var(--text3);font-weight:600;}
+
 </style>
 </head>
 <body>
@@ -385,9 +395,13 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div id="favs-panel" style="display:none;margin-bottom:0.75rem;">
       <div class="card" style="margin-bottom:0;">
         <div class="flex-between" style="margin-bottom:0.5rem;">
-          <div class="card-title" style="margin:0;font-size:0.78rem;">⭐ Quick Add Favourites</div>
-          <button class="btn btn-sm btn-ghost" onclick="document.getElementById('favs-panel').style.display='none'">✕</button>
+          <div class="card-title" style="margin:0;font-size:0.78rem;">⭐ Quick Add Favourites <span id="favs-count" style="color:var(--text3);font-weight:400;"></span></div>
+          <div style="display:flex;gap:0.4rem;">
+            <button class="btn btn-sm" onclick="openCustomFavModal()" style="padding:3px 10px;border-radius:6px;border:1px solid var(--green);color:var(--green);background:transparent;font-size:0.72rem;cursor:pointer;font-family:'Outfit',sans-serif;">+ Custom</button>
+            <button class="btn btn-sm btn-ghost" onclick="document.getElementById('favs-panel').style.display='none'">✕</button>
+          </div>
         </div>
+        <div style="font-size:0.7rem;color:var(--text3);margin-bottom:0.5rem;line-height:1.5;">Save items you use daily — supplements, regular meals — to skip retyping.</div>
         <div id="favs-list"></div>
       </div>
     </div>
@@ -418,7 +432,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
           <span class="lbl" style="color:var(--green);">protein</span>
         </div>
         <div class="macro-pill" style="background:rgba(30,95,140,0.1);">
-          <input type="number" id="r-carbs" class="macro-input" style="color:var(--blue);" value="0" min="0">
+          <input type="number" id="r-carbs" class="macro-input" style="color:var(--blue);" value="0" min="0" oninput="updateNetCarbs()">
           <span class="lbl" style="color:var(--blue);">carbs</span>
         </div>
         <div class="macro-pill" style="background:rgba(192,86,33,0.1);">
@@ -429,6 +443,16 @@ textarea.form-control{resize:vertical;min-height:70px;}
           <input type="number" id="r-sugar" class="macro-input" style="color:var(--purple);" value="0" min="0">
           <span class="lbl" style="color:var(--purple);">sugar</span>
         </div>
+        <div class="macro-pill" style="background:rgba(146,96,10,0.08);">
+          <input type="number" id="r-fiber" class="macro-input" style="color:#92600A;" value="0" min="0" oninput="updateNetCarbs()">
+          <span class="lbl" style="color:#92600A;">fiber</span>
+        </div>
+      </div>
+      <!-- NET CARBS ANNOTATION (Round 7) -->
+      <!-- Shows only when fiber > 0; net carbs = carbs - fiber. Reflects energy-relevant carb intake. -->
+      <div id="r-net-carbs-row" style="display:none;font-size:0.72rem;color:var(--text3);margin-top:-0.6rem;margin-bottom:0.6rem;padding:0.4rem 0.6rem;background:rgba(30,95,140,0.05);border-radius:6px;border-left:2px solid var(--blue);">
+        <span style="color:var(--blue);font-weight:600;">↳ Net carbs: <span id="r-net-carbs-val">0</span>g</span>
+        <span style="color:var(--text3);">(carbs − fiber, the carbs your body actually absorbs as energy)</span>
       </div>
       <div id="result-note" style="font-size:0.8rem;color:var(--text3);margin-bottom:0.85rem;line-height:1.65;padding:0.6rem;background:var(--bg3);border-radius:var(--r-xs);"></div>
       <!-- PORTION ADJUSTER -->
@@ -480,7 +504,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     </div>
     <div class="stat-row">
       <div class="stat-box"><span class="stat-val" style="color:var(--green);" id="t-protein">0g</span><span class="stat-lbl">Protein</span></div>
-      <div class="stat-box"><span class="stat-val" style="color:var(--blue);" id="t-carbs">0g</span><span class="stat-lbl">Carbs</span></div>
+      <div class="stat-box"><span class="stat-val" style="color:var(--blue);" id="t-carbs">0g</span><span class="stat-lbl">Carbs</span><span class="stat-sublbl" id="t-carbs-net" style="display:none;font-size:0.62rem;color:var(--text3);margin-top:2px;">net: <span id="t-net-carbs-val">0</span>g</span></div>
       <div class="stat-box"><span class="stat-val" style="color:var(--orange);" id="t-fat">0g</span><span class="stat-lbl">Fat</span></div>
       <div class="stat-box"><span class="stat-val" style="color:var(--purple);" id="t-sugar">0g</span><span class="stat-lbl">Sugar</span></div>
       <div class="stat-box"><span class="stat-val" style="color:var(--amber);" id="t-fiber">0g</span><span class="stat-lbl">Fiber</span></div>
@@ -508,6 +532,12 @@ textarea.form-control{resize:vertical;min-height:70px;}
       </div>
       <div id="ex-list"></div>
       <div id="ex-toggle-hint" style="font-size:0.7rem;color:var(--text3);margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);line-height:1.5;"></div>
+    </div>
+    <!-- QUICK-ADD FAVOURITES STRIP (Round 5) -->
+    <div class="card" id="quick-favs-card" style="display:none;">
+      <div class="card-title">⭐ Quick Add</div>
+      <div style="font-size:0.7rem;color:var(--text3);margin-bottom:0.6rem;line-height:1.5;">One-tap log of items you save as favourites.</div>
+      <div id="quick-favs-list"></div>
     </div>
     <div class="card">
       <div class="card-title">Progress vs Goals</div>
@@ -644,7 +674,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <div class="stat-row" id="history-averages" style="grid-template-columns:repeat(auto-fill,minmax(82px,1fr));">
         <div class="stat-box"><span class="stat-val" style="color:var(--amber);" id="avg-cal">—</span><span class="stat-lbl">Avg kcal</span></div>
         <div class="stat-box"><span class="stat-val" style="color:var(--green);" id="avg-protein">—</span><span class="stat-lbl">Avg protein</span></div>
-        <div class="stat-box"><span class="stat-val" style="color:var(--blue);" id="avg-carbs">—</span><span class="stat-lbl">Avg carbs</span></div>
+        <div class="stat-box"><span class="stat-val" style="color:var(--blue);" id="avg-carbs">—</span><span class="stat-lbl">Avg carbs</span><span class="stat-sublbl" id="avg-carbs-net" style="display:none;">net: <span id="avg-net-carbs-val">0</span>g</span></div>
         <div class="stat-box"><span class="stat-val" style="color:var(--orange);" id="avg-fat">—</span><span class="stat-lbl">Avg fat</span></div>
         <div class="stat-box"><span class="stat-val" style="color:var(--purple);" id="avg-sugar">—</span><span class="stat-lbl">Avg sugar</span></div>
         <div class="stat-box"><span class="stat-val" style="color:var(--green);" id="avg-burned">—</span><span class="stat-lbl">Avg burned</span></div>
@@ -867,6 +897,12 @@ ZERO HANDLING — IMPORTANT:
 - Fiber must be 0 for foods that contain no fiber: eggs, dairy, plain meat/poultry/fish, oils, butter, coffee, tea, water. Only plant foods have meaningful fiber.
 - When a value would round to less than 0.5g, output 0, not 1. Do NOT add small "safety" values to fields that should be zero.
 
+PURE FIBER SUPPLEMENTS:
+- For pure fiber supplements (psyllium husk, methylcellulose, inulin, wheat dextrin, glucomannan, etc.), the carbs gram count should EQUAL the fiber gram count (because fiber IS classified as a carbohydrate). Do NOT count them as separate, additional carbs.
+- Calories for fiber supplements should be approximately 2 kcal per gram of fiber (FDA labeling standard, since soluble fiber is partially fermented for energy by gut bacteria).
+- Sugar must be 0 for unflavored fiber supplements.
+- Example: "2 teaspoons psyllium husk (~10g)" → roughly 5g fiber, 5g carbs (same as the fiber), 0 sugar, 0 protein, 0 fat, ~10 kcal.
+
 LANGUAGE NOTE: User input may contain typos or be in English, Finnish, or other languages. Interpret charitably (e.g. "excercises" → "exercises", "chiken" → "chicken", "kahvi" → "coffee"). Always reply in English.`;}
 function extractJSON(text) {
   if (!text || !text.trim()) throw new Error('Empty response from AI');
@@ -960,6 +996,25 @@ async function analyzeDescription(){
   setAlert('Error: '+(lastError?.message||'Analysis failed')+' — try again with simpler wording.','error');
   showLoading(false);
 }
+// ─── NET CARBS HELPER (Round 7) ───
+// Net carbs = total carbs - fiber. Reflects what your body actually absorbs as energy.
+// We show this annotation only when fiber > 0 and meaningfully different from total carbs,
+// so eggs/meat (carbs=0, fiber=0) and sugar drinks (carbs=20, fiber=0) don't display it.
+function updateNetCarbs() {
+  const row = document.getElementById('r-net-carbs-row');
+  const valEl = document.getElementById('r-net-carbs-val');
+  if (!row || !valEl) return;
+  const carbs = parseFloat(document.getElementById('r-carbs')?.value) || 0;
+  const fiber = parseFloat(document.getElementById('r-fiber')?.value) || 0;
+  if (fiber <= 0 || carbs <= 0) {
+    row.style.display = 'none';
+    return;
+  }
+  const net = Math.max(0, carbs - fiber);
+  valEl.textContent = Math.round(net);
+  row.style.display = 'block';
+}
+
 function showResult(json){
   state.pendingResult=json;
   document.getElementById('result-name').value=json.name||'Unknown food';
@@ -969,8 +1024,10 @@ function showResult(json){
   document.getElementById('r-carbs').value=Math.round(json.carbs||0);
   document.getElementById('r-fat').value=Math.round(json.fat||0);
   document.getElementById('r-sugar').value=Math.round(json.sugar||0);
+  document.getElementById('r-fiber').value=Math.round(json.fiber||0);
   document.getElementById('result-note').textContent=json.note||'';
   document.getElementById('ai-result').classList.add('visible');
+  updateNetCarbs();
 }
 function hideResult(){document.getElementById('ai-result').classList.remove('visible');state.pendingResult=null;}
 function addToLog(){if(!state.pendingResult)return;
@@ -984,7 +1041,7 @@ function addToLog(){if(!state.pendingResult)return;
     carbs: parseFloat(document.getElementById('r-carbs').value) || 0,
     fat: parseFloat(document.getElementById('r-fat').value) || 0,
     sugar: parseFloat(document.getElementById('r-sugar').value) || 0,
-    fiber: state.pendingResult.fiber || 0,
+    fiber: parseFloat(document.getElementById('r-fiber').value) || 0,
     note: state.pendingResult.note || '',
     meal: document.getElementById('result-meal').value,
     time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
@@ -1021,6 +1078,7 @@ function getTotals(){return state.log.reduce((a,e)=>({calories:a.calories+(e.cal
 function renderToday(){
   initWater();
   renderExercise();
+  renderQuickFavsStrip();
   const t=getTotals();
   const tgt=state.targets||{calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
   // Round 3: if toggle ON, add today's burned calories to the goal so user can "earn" extra food
@@ -1029,6 +1087,17 @@ function renderToday(){
   const effectiveGoal=adjustEnabled?(tgt.calories+Math.round(exTotals.caloriesBurned)):tgt.calories;
   document.getElementById('t-protein').textContent=Math.round(t.protein)+'g';
   document.getElementById('t-carbs').textContent=Math.round(t.carbs)+'g';
+  // Net carbs sublabel — show only when fiber is substantial enough to matter
+  const netCarbsSubEl = document.getElementById('t-carbs-net');
+  const netCarbsValEl = document.getElementById('t-net-carbs-val');
+  if (netCarbsSubEl && netCarbsValEl) {
+    if (t.fiber > 0 && t.carbs > 0) {
+      netCarbsValEl.textContent = Math.round(Math.max(0, t.carbs - t.fiber));
+      netCarbsSubEl.style.display = 'block';
+    } else {
+      netCarbsSubEl.style.display = 'none';
+    }
+  }
   document.getElementById('t-fat').textContent=Math.round(t.fat)+'g';
   document.getElementById('t-sugar').textContent=Math.round(t.sugar)+'g';
   document.getElementById('t-fiber').textContent=Math.round(t.fiber)+'g';
@@ -1353,17 +1422,20 @@ function showFavs() {
   const favs = getFavourites();
   const panel = document.getElementById('favs-panel');
   const list = document.getElementById('favs-list');
+  const countEl = document.getElementById('favs-count');
+  if (countEl) countEl.textContent = favs.length > 0 ? `(${favs.length})` : '';
   if (!favs.length) {
-    list.innerHTML = '<p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:0.5rem;">No favourites yet. Analyze food and tap ⭐ Save.</p>';
+    list.innerHTML = '<p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:0.5rem;">No favourites yet. Analyze food and tap ⭐ Save, or tap "+ Custom" above.</p>';
   } else {
     list.innerHTML = favs.map(f => `
       <div class="fav-item">
-        <div>
+        <div style="flex:1;min-width:0;">
           <div class="fav-name">${f.name}</div>
           <div class="fav-cal">${Math.round(f.calories)} kcal · P${Math.round(f.protein)}g C${Math.round(f.carbs)}g F${Math.round(f.fat)}g</div>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
           <button class="fav-add" onclick="quickAddFav(${f.id})">+ Add</button>
+          <button class="fav-add" onclick="editFavourite(${f.id})" style="background:transparent;border-color:var(--border2);color:var(--text3);" title="Edit">✏️</button>
           <button class="fav-del" onclick="deleteFav(${f.id})">✕</button>
         </div>
       </div>`).join('');
@@ -1396,7 +1468,88 @@ function quickAddFav(id) {
 function deleteFav(id) {
   const favs = getFavourites().filter(f => f.id !== id);
   saveFavourites(favs);
-  showFavs();
+  // refresh open panels
+  const panel = document.getElementById('favs-panel');
+  const wasOpen = panel.style.display === 'block';
+  if (wasOpen) { panel.style.display = 'none'; showFavs(); }
+  renderQuickFavsStrip();
+}
+
+// ─── CUSTOM FOOD FAVOURITE (Round 5) ───
+// Allows users to create a favourite manually without going through AI.
+// Useful for supplements, branded items, or anything they know the values for.
+let editingFavId = null;
+function openCustomFavModal(prefill) {
+  editingFavId = (prefill && prefill.id) ? prefill.id : null;
+  document.getElementById('custom-fav-title').textContent = prefill ? '✏️ Edit Favourite' : '⭐ Add Custom Favourite';
+  document.getElementById('cfav-save-btn').textContent = prefill ? 'Save Changes' : 'Save to Favourites';
+  document.getElementById('cfav-name').value     = prefill?.name || '';
+  document.getElementById('cfav-portion').value  = prefill?.portion || '';
+  document.getElementById('cfav-cal').value      = prefill?.calories ?? '';
+  document.getElementById('cfav-protein').value  = prefill?.protein ?? '';
+  document.getElementById('cfav-carbs').value    = prefill?.carbs ?? '';
+  document.getElementById('cfav-fat').value      = prefill?.fat ?? '';
+  document.getElementById('cfav-sugar').value    = prefill?.sugar ?? '';
+  document.getElementById('cfav-fiber').value    = prefill?.fiber ?? '';
+  setCFavAlert('', '');
+  document.getElementById('custom-fav-overlay').style.display = 'block';
+}
+function closeCustomFavModal(e) {
+  if (!e || e.target === document.getElementById('custom-fav-overlay')) {
+    document.getElementById('custom-fav-overlay').style.display = 'none';
+    editingFavId = null;
+  }
+}
+function setCFavAlert(msg, type) {
+  const el = document.getElementById('cfav-alert');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'alert' + (type ? ' ' + type : '');
+}
+function saveCustomFavourite() {
+  const name = document.getElementById('cfav-name').value.trim();
+  if (!name) { setCFavAlert('Please enter a name.', 'error'); return; }
+  const calories = parseFloat(document.getElementById('cfav-cal').value) || 0;
+  if (calories <= 0) { setCFavAlert('Please enter calories greater than 0.', 'error'); return; }
+  const item = {
+    id: editingFavId || Date.now(),
+    name,
+    portion: document.getElementById('cfav-portion').value.trim() || 'Custom entry',
+    calories,
+    protein: parseFloat(document.getElementById('cfav-protein').value) || 0,
+    carbs:   parseFloat(document.getElementById('cfav-carbs').value)   || 0,
+    fat:     parseFloat(document.getElementById('cfav-fat').value)     || 0,
+    sugar:   parseFloat(document.getElementById('cfav-sugar').value)   || 0,
+    fiber:   parseFloat(document.getElementById('cfav-fiber').value)   || 0,
+  };
+  let favs = getFavourites();
+  if (editingFavId) {
+    favs = favs.map(f => f.id === editingFavId ? item : f);
+  } else {
+    // Don't allow duplicates by name (case-insensitive)
+    if (favs.find(f => f.name.toLowerCase() === item.name.toLowerCase())) {
+      setCFavAlert('Already a favourite with that name. Edit it instead, or use a different name.', 'error');
+      return;
+    }
+    favs.unshift(item);
+    if (favs.length > 30) favs.pop();
+  }
+  saveFavourites(favs);
+  document.getElementById('custom-fav-overlay').style.display = 'none';
+  editingFavId = null;
+  setAlert(editingFavId ? 'Favourite updated!' : 'Saved to favourites!', 'success');
+  setTimeout(() => setAlert('', ''), 1800);
+  // refresh any open panels
+  const panel = document.getElementById('favs-panel');
+  if (panel.style.display === 'block') { panel.style.display = 'none'; showFavs(); }
+  renderQuickFavsStrip();
+}
+function editFavourite(id) {
+  const f = getFavourites().find(x => x.id === id);
+  if (!f) return;
+  // Close the favs panel first to avoid stacked overlays
+  document.getElementById('favs-panel').style.display = 'none';
+  openCustomFavModal(f);
 }
 
 // ─── PORTION ADJUSTER ───
@@ -1414,6 +1567,8 @@ function resetPortion() {
   document.getElementById('r-carbs').value = Math.round(baseResult.carbs);
   document.getElementById('r-fat').value = Math.round(baseResult.fat);
   document.getElementById('r-sugar').value = Math.round(baseResult.sugar);
+  document.getElementById('r-fiber').value = Math.round(baseResult.fiber||0);
+  updateNetCarbs();
 }
 function adjustPortion(delta) {
   if (!state.pendingResult) return;
@@ -1437,6 +1592,8 @@ function adjustPortion(delta) {
   document.getElementById('r-carbs').value = Math.round(scaled.carbs);
   document.getElementById('r-fat').value = Math.round(scaled.fat);
   document.getElementById('r-sugar').value = Math.round(scaled.sugar);
+  document.getElementById('r-fiber').value = Math.round(scaled.fiber||0);
+  updateNetCarbs();
 }
 // Reset portion when new result shown — patch showResult
 const _origShowResult = showResult;
@@ -1505,6 +1662,11 @@ ZERO HANDLING — IMPORTANT:
 - Fiber must be 0 for animal products and oils. Only plant foods have fiber.
 - When a value would round to less than 0.5g, output 0, not 1. Never add small "safety" values to zero-fields.
 
+PURE FIBER SUPPLEMENTS:
+- For pure fiber supplements (psyllium, methylcellulose, inulin, wheat dextrin, glucomannan), carbs gram count should EQUAL the fiber gram count (fiber IS a carbohydrate).
+- Calories should be approximately 2 kcal per gram of fiber.
+- Sugar must be 0 for unflavored fiber supplements.
+
 LANGUAGE NOTE: The user's correction may contain typos or be in English, Finnish, or other languages. Interpret charitably (e.g. "excercises" → "exercises", "chiken" → "chicken", "kahvi" → "coffee"). Always reply in English.`;
 }
 
@@ -1533,6 +1695,8 @@ async function recalculateMacros() {
     document.getElementById('r-carbs').value = Math.round(json.carbs || 0);
     document.getElementById('r-fat').value = Math.round(json.fat || 0);
     document.getElementById('r-sugar').value = Math.round(json.sugar || 0);
+    document.getElementById('r-fiber').value = Math.round(json.fiber || 0);
+    updateNetCarbs();
     document.getElementById('result-note').textContent = json.note || '';
     // Update pendingResult so "Add to Log" picks up the new numbers
     state.pendingResult = {
@@ -1941,18 +2105,21 @@ function saveExerciseFavourite() {
 function renderExerciseFavs() {
   const list = document.getElementById('ex-favs-list');
   const favs = getExerciseFavs();
+  const countEl = document.getElementById('ex-favs-count');
+  if (countEl) countEl.textContent = favs.length > 0 ? `(${favs.length})` : '';
   if (!favs.length) {
-    list.innerHTML = '<p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:1rem;">No favourite activities yet. Use the AI tab and tap ⭐ Save to add one.</p>';
+    list.innerHTML = '<p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:1rem;">No favourite activities yet. Use the AI tab and tap ⭐ Save, or tap "+ Custom" above.</p>';
     return;
   }
   list.innerHTML = favs.map(f => `
     <div class="fav-item">
-      <div>
+      <div style="flex:1;min-width:0;">
         <div class="fav-name">${exIconFor(f.name)} ${f.name}</div>
         <div class="fav-cal">${Math.round(f.calories)} kcal · ${Math.round(f.duration)} min</div>
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
         <button class="fav-add" onclick="quickAddExFav(${f.id})">+ Add</button>
+        <button class="fav-add" onclick="editExFavourite(${f.id})" style="background:transparent;border-color:var(--border2);color:var(--text3);" title="Edit">✏️</button>
         <button class="fav-del" onclick="deleteExFav(${f.id})">✕</button>
       </div>
     </div>
@@ -1968,6 +2135,117 @@ function deleteExFav(id) {
   const favs = getExerciseFavs().filter(f => f.id !== id);
   saveExerciseFavsList(favs);
   renderExerciseFavs();
+  renderQuickFavsStrip();
+}
+
+// ─── CUSTOM EXERCISE FAVOURITE (Round 5) ───
+let editingExFavId = null;
+function openCustomExFavModal(prefill) {
+  editingExFavId = (prefill && prefill.id) ? prefill.id : null;
+  document.getElementById('custom-exfav-title').textContent = prefill ? '✏️ Edit Exercise Favourite' : '⭐ Add Custom Exercise Favourite';
+  document.getElementById('cexfav-save-btn').textContent = prefill ? 'Save Changes' : 'Save to Favourites';
+  document.getElementById('cexfav-name').value     = prefill?.name || '';
+  document.getElementById('cexfav-duration').value = prefill?.duration ?? '';
+  document.getElementById('cexfav-burn').value     = prefill?.calories ?? '';
+  setCExFavAlert('', '');
+  document.getElementById('custom-exfav-overlay').style.display = 'block';
+}
+function closeCustomExFavModal(e) {
+  if (!e || e.target === document.getElementById('custom-exfav-overlay')) {
+    document.getElementById('custom-exfav-overlay').style.display = 'none';
+    editingExFavId = null;
+  }
+}
+function setCExFavAlert(msg, type) {
+  const el = document.getElementById('cexfav-alert');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'alert' + (type ? ' ' + type : '');
+}
+function saveCustomExFavourite() {
+  const name = document.getElementById('cexfav-name').value.trim();
+  if (!name) { setCExFavAlert('Please enter an activity name.', 'error'); return; }
+  const duration = parseFloat(document.getElementById('cexfav-duration').value) || 0;
+  const calories = parseFloat(document.getElementById('cexfav-burn').value) || 0;
+  if (calories <= 0) { setCExFavAlert('Please enter calories burned greater than 0.', 'error'); return; }
+  const item = {
+    id: editingExFavId || Date.now(),
+    name,
+    duration: Math.round(duration),
+    calories: Math.round(calories),
+  };
+  let favs = getExerciseFavs();
+  if (editingExFavId) {
+    favs = favs.map(f => f.id === editingExFavId ? item : f);
+  } else {
+    if (favs.find(f => f.name.toLowerCase() === item.name.toLowerCase())) {
+      setCExFavAlert('Already a favourite with that name. Edit it instead, or use a different name.', 'error');
+      return;
+    }
+    favs.unshift(item);
+    if (favs.length > 30) favs.pop();
+  }
+  saveExerciseFavsList(favs);
+  document.getElementById('custom-exfav-overlay').style.display = 'none';
+  editingExFavId = null;
+  renderExerciseFavs();
+  renderQuickFavsStrip();
+}
+function editExFavourite(id) {
+  const f = getExerciseFavs().find(x => x.id === id);
+  if (!f) return;
+  openCustomExFavModal(f);
+}
+
+// ─── QUICK-ADD FAVOURITES STRIP ON TODAY TAB (Round 5) ───
+// Shows a compact horizontal list of favourites on the Today tab so users can log
+// regular items in a single tap without navigating to Log → Favourites.
+function renderQuickFavsStrip() {
+  const card = document.getElementById('quick-favs-card');
+  const listEl = document.getElementById('quick-favs-list');
+  if (!card || !listEl) return;
+  const foodFavs = getFavourites();
+  const exFavs = getExerciseFavs();
+  if (foodFavs.length === 0 && exFavs.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  // Show top 6 of each, mixed
+  const foodHTML = foodFavs.slice(0, 6).map(f => `
+    <button onclick="quickAddFavFromToday(${f.id})" class="quick-fav-chip" title="${f.name}: ${Math.round(f.calories)} kcal">
+      <span class="quick-fav-icon">🍽️</span>
+      <span class="quick-fav-name">${f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name}</span>
+      <span class="quick-fav-val">${Math.round(f.calories)} kcal</span>
+    </button>
+  `).join('');
+  const exHTML = exFavs.slice(0, 6).map(f => `
+    <button onclick="quickAddExFavFromToday(${f.id})" class="quick-fav-chip" title="${f.name}: ${Math.round(f.calories)} kcal burned">
+      <span class="quick-fav-icon">${exIconFor(f.name)}</span>
+      <span class="quick-fav-name">${f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name}</span>
+      <span class="quick-fav-val" style="color:var(--green);">${Math.round(f.calories)} kcal</span>
+    </button>
+  `).join('');
+  listEl.innerHTML = foodHTML + exHTML;
+}
+function quickAddFavFromToday(id) {
+  const f = getFavourites().find(x => x.id === id);
+  if (!f) return;
+  state.log.push({
+    ...f,
+    meal: 'Snack',
+    time: new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}),
+    id: Date.now(),
+  });
+  save(); saveHistorySnapshot();
+  setAlert(`Added ${f.name}!`, 'success');
+  setTimeout(() => setAlert('', ''), 1800);
+  renderToday();
+}
+function quickAddExFavFromToday(id) {
+  const f = getExerciseFavs().find(x => x.id === id);
+  if (!f) return;
+  addExerciseToLog({name: f.name, duration: f.duration, calories: f.calories});
 }
 
 // ─── EXERCISE-CALORIE-GOAL TOGGLE ───
@@ -2222,6 +2500,19 @@ function renderHistory() {
   document.getElementById('avg-cal').textContent    = avg('calories') || '—';
   document.getElementById('avg-protein').textContent = avg('protein') ? avg('protein')+'g' : '—';
   document.getElementById('avg-carbs').textContent   = avg('carbs')   ? avg('carbs')+'g'   : '—';
+  // Net carbs sublabel for averages (Round 7) — only show when fiber meaningfully affects carbs
+  const avgFiber = avg('fiber') || 0;
+  const avgCarbsRaw = avg('carbs') || 0;
+  const avgNetCarbsSubEl = document.getElementById('avg-carbs-net');
+  const avgNetCarbsValEl = document.getElementById('avg-net-carbs-val');
+  if (avgNetCarbsSubEl && avgNetCarbsValEl) {
+    if (avgFiber > 0 && avgCarbsRaw > 0) {
+      avgNetCarbsValEl.textContent = Math.round(Math.max(0, avgCarbsRaw - avgFiber));
+      avgNetCarbsSubEl.style.display = 'flex';
+    } else {
+      avgNetCarbsSubEl.style.display = 'none';
+    }
+  }
   document.getElementById('avg-fat').textContent     = avg('fat')     ? avg('fat')+'g'     : '—';
   document.getElementById('avg-sugar').textContent   = avg('sugar')   ? avg('sugar')+'g'   : '—';
   document.getElementById('avg-burned').textContent  = avgBurnedAcrossActive > 0 ? avgBurnedAcrossActive : '—';
@@ -2291,6 +2582,47 @@ function renderHistory() {
 }
 </script>
 
+<!-- CUSTOM FOOD FAVOURITE MODAL (Round 5) -->
+<div class="ex-modal-overlay" id="custom-fav-overlay" onclick="closeCustomFavModal(event)">
+  <div class="ex-modal-card" onclick="event.stopPropagation()" style="max-width:420px;">
+    <div class="ex-modal-header">
+      <div class="ex-modal-title" id="custom-fav-title">⭐ Add Custom Favourite</div>
+      <button class="ex-modal-close" onclick="closeCustomFavModal()">✕</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;line-height:1.5;">Enter values from the package or your own knowledge. Useful for supplements, branded items, or anything you eat regularly.</div>
+    <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-control" id="cfav-name" placeholder="e.g. Daily fibre supplement (3 spoons)" spellcheck="true" autocapitalize="sentences"></div>
+    <div class="form-group"><label class="form-label">Portion description (optional)</label><input type="text" class="form-control" id="cfav-portion" placeholder="e.g. 3 tablespoons / 15 g" spellcheck="true" autocapitalize="sentences"></div>
+    <div class="grid-3">
+      <div class="form-group"><label class="form-label">Calories</label><input type="number" class="form-control" id="cfav-cal" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">Protein g</label><input type="number" class="form-control" id="cfav-protein" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">Carbs g</label><input type="number" class="form-control" id="cfav-carbs" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">Fat g</label><input type="number" class="form-control" id="cfav-fat" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">Sugar g</label><input type="number" class="form-control" id="cfav-sugar" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">Fiber g</label><input type="number" class="form-control" id="cfav-fiber" placeholder="0" min="0"></div>
+    </div>
+    <div class="alert" id="cfav-alert"></div>
+    <button class="btn btn-primary" id="cfav-save-btn" onclick="saveCustomFavourite()">Save to Favourites</button>
+  </div>
+</div>
+
+<!-- CUSTOM EXERCISE FAVOURITE MODAL (Round 5) -->
+<div class="ex-modal-overlay" id="custom-exfav-overlay" onclick="closeCustomExFavModal(event)">
+  <div class="ex-modal-card" onclick="event.stopPropagation()" style="max-width:420px;">
+    <div class="ex-modal-header">
+      <div class="ex-modal-title" id="custom-exfav-title">⭐ Add Custom Exercise Favourite</div>
+      <button class="ex-modal-close" onclick="closeCustomExFavModal()">✕</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;line-height:1.5;">Save activities you do regularly — your daily commute, a morning routine, etc.</div>
+    <div class="form-group"><label class="form-label">Activity name</label><input type="text" class="form-control" id="cexfav-name" placeholder="e.g. Bike commute (6.5 km)" spellcheck="true" autocapitalize="sentences"></div>
+    <div class="grid-2">
+      <div class="form-group"><label class="form-label">Duration (min)</label><input type="number" class="form-control" id="cexfav-duration" placeholder="0" min="1"></div>
+      <div class="form-group"><label class="form-label">Calories burned</label><input type="number" class="form-control" id="cexfav-burn" placeholder="0" min="0"></div>
+    </div>
+    <div class="alert" id="cexfav-alert"></div>
+    <button class="btn btn-primary" id="cexfav-save-btn" onclick="saveCustomExFavourite()">Save to Favourites</button>
+  </div>
+</div>
+
 <!-- EXERCISE MODAL (Round 3) -->
 <div class="ex-modal-overlay" id="ex-modal-overlay" onclick="closeExerciseModal(event)">
   <div class="ex-modal-card" onclick="event.stopPropagation()">
@@ -2347,7 +2679,11 @@ function renderHistory() {
     </div>
     <!-- Favourites tab -->
     <div class="method-content" id="ex-method-favs">
-      <div id="ex-favs-list"><p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:1rem;">No favourite activities yet. Use the AI tab and tap ⭐ Save to add one.</p></div>
+      <div class="flex-between" style="margin-bottom:0.6rem;">
+        <div style="font-size:0.78rem;color:var(--text3);line-height:1.5;">Save regular activities to skip retyping <span id="ex-favs-count" style="color:var(--text3);"></span></div>
+        <button class="btn btn-sm" onclick="openCustomExFavModal()" style="padding:3px 10px;border-radius:6px;border:1px solid var(--green);color:var(--green);background:transparent;font-size:0.72rem;cursor:pointer;font-family:'Outfit',sans-serif;flex-shrink:0;">+ Custom</button>
+      </div>
+      <div id="ex-favs-list"><p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:1rem;">No favourite activities yet. Use the AI tab and tap ⭐ Save, or tap "+ Custom" above.</p></div>
     </div>
   </div>
 </div>
