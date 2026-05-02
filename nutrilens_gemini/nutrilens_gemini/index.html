@@ -277,6 +277,26 @@ textarea.form-control{resize:vertical;min-height:70px;}
 /* EXPORT BTN */
 .export-row{display:flex;gap:0.5rem;margin-top:0.5rem;}
 
+/* EXERCISE TRACKER (Round 3) */
+.ex-item{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border);}
+.ex-item:last-child{border-bottom:none;}
+.ex-icon{width:34px;height:34px;border-radius:10px;background:rgba(45,106,79,0.12);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.ex-info{flex:1;min-width:0;}
+.ex-name{font-size:0.86rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ex-meta{font-size:0.7rem;color:var(--text3);margin-top:2px;}
+.ex-burn{font-size:0.95rem;font-weight:700;color:var(--green);}
+.ex-burn-lbl{font-size:0.6rem;color:var(--text3);}
+.ex-summary-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0 0.75rem 0;}
+.ex-burn-total{font-size:1.4rem;font-weight:700;color:var(--green);}
+.ex-burn-total-lbl{font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;}
+
+/* EXERCISE MODAL */
+.ex-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;padding:1rem;overflow-y:auto;display:none;}
+.ex-modal-card{background:#fff;border-radius:16px;max-width:460px;margin:1.5rem auto;padding:1.4rem;}
+.ex-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.ex-modal-title{font-size:1rem;font-weight:700;color:var(--text);}
+.ex-modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text3);padding:0;}
+
 </style>
 </head>
 <body>
@@ -379,7 +399,14 @@ textarea.form-control{resize:vertical;min-height:70px;}
         <input type="text" id="result-name" class="form-control" style="font-size:1rem;font-weight:600;padding:0.35rem 0.6rem;border-radius:6px;" placeholder="Food name">
         <span style="font-size:0.7rem;color:var(--text3);white-space:nowrap;flex-shrink:0;">✏️ tap to edit</span>
       </div>
-      <input type="text" id="result-portion" class="form-control" style="font-size:0.78rem;color:var(--text3);padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.85rem;" placeholder="Portion size">
+      <input type="text" id="result-portion" class="form-control" style="font-size:0.78rem;color:var(--text3);padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.5rem;" placeholder="Portion size">
+      <!-- RECALCULATE BUTTON (only visible after user edits name or portion) -->
+      <div id="recalc-wrap" style="display:none;margin-bottom:0.85rem;">
+        <button id="recalc-btn" onclick="recalculateMacros()" style="width:100%;padding:0.5rem;border-radius:8px;border:1px dashed var(--green);background:rgba(45,106,79,0.06);color:var(--green);font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
+          <span id="recalc-icon">🔄</span>
+          <span id="recalc-text">Recalculate macros from corrected food/portion</span>
+        </button>
+      </div>
       <!-- EDITABLE MACROS -->
       <div class="macro-grid">
         <div class="macro-pill" style="background:rgba(146,96,10,0.1);">
@@ -464,6 +491,21 @@ textarea.form-control{resize:vertical;min-height:70px;}
       </div>
       <div style="font-size:0.75rem;color:var(--text3);margin-top:0.5rem;" id="water-label">0 of 8 glasses</div>
     </div>
+    <!-- EXERCISE / ACTIVITY CARD (Round 3) -->
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:0.4rem;">
+        <div class="card-title" style="margin:0;">🏃 Activity</div>
+        <button class="btn btn-sm btn-ghost" onclick="openExerciseModal()" style="padding:4px 10px;">+ Add</button>
+      </div>
+      <div class="ex-summary-row">
+        <div>
+          <span class="ex-burn-total" id="ex-burn-total">0</span>
+          <span style="font-size:0.8rem;color:var(--text3);margin-left:4px;">kcal burned</span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text3);" id="ex-duration-total">0 min</div>
+      </div>
+      <div id="ex-list"></div>
+    </div>
     <div class="card">
       <div class="card-title">Progress vs Goals</div>
       <div id="progress-bars"></div>
@@ -515,6 +557,15 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="card" id="targets-card" style="display:none;">
       <div class="card-title">Daily Targets</div>
       <div class="stat-row" id="targets-grid" style="grid-template-columns:repeat(3,1fr);"></div>
+    </div>
+    <!-- EXERCISE & CALORIE GOAL TOGGLE (Round 3) -->
+    <div class="card">
+      <div class="card-title">🏃 Exercise &amp; Calorie Goal</div>
+      <div class="notif-row">
+        <span class="notif-label">Adjust daily calorie goal with exercise burn</span>
+        <button class="toggle-switch" id="toggle-ex-adjust" onclick="toggleExerciseAdjust(this)"><span class="toggle-knob"></span></button>
+      </div>
+      <p style="font-size:0.72rem;color:var(--text3);margin-top:0.5rem;line-height:1.5;">When ON, calories burned from logged exercise are added to today's calorie target — so you can "earn" extra food. When OFF (default), exercise is tracked but your calorie goal stays fixed. Note: exercise burn estimates are approximate (typically ±30%).</p>
     </div>
     <!-- NOTIFICATIONS -->
     <div class="card">
@@ -621,11 +672,11 @@ textarea.form-control{resize:vertical;min-height:70px;}
 </div>
 
 <script>
-let state={apiKey:'',profile:null,targets:null,log:[],pendingResult:null,imageB64:null,imageMime:'image/jpeg'};
+let state={apiKey:'',profile:null,targets:null,log:[],exerciseLog:[],pendingResult:null,imageB64:null,imageMime:'image/jpeg'};
 let deferredInstall=null;
 function save(){
   const today=new Date().toISOString().slice(0,10);
-  try{localStorage.setItem('nl_state',JSON.stringify({profile:state.profile,targets:state.targets,log:state.log,apiKey:state.apiKey,logDate:today}));}catch(e){}
+  try{localStorage.setItem('nl_state',JSON.stringify({profile:state.profile,targets:state.targets,log:state.log,exerciseLog:state.exerciseLog||[],apiKey:state.apiKey,logDate:today}));}catch(e){}
   // Also always save today's totals to history
   if(state.log && state.log.length>0){
     try{
@@ -638,12 +689,23 @@ function save(){
       localStorage.setItem('nl_history_detail',JSON.stringify(dHist));
     }catch(e){}
   }
+  // Round 3: save today's exercise log/totals to exercise history
+  if(state.exerciseLog && state.exerciseLog.length>0){
+    try{
+      const exHist=JSON.parse(localStorage.getItem('nl_exercise_history')||'{}');
+      const exTotals=getExerciseTotals();
+      exHist[today]={...exTotals,activities:state.exerciseLog,date:today};
+      localStorage.setItem('nl_exercise_history',JSON.stringify(exHist));
+    }catch(e){}
+  }
 }
 function load(){
   try{
     const s=localStorage.getItem('nl_state');
     if(s){const d=JSON.parse(s);Object.assign(state,d);}
   }catch(e){}
+  // Defensive: ensure exerciseLog is always an array (for users who saved before Round 3)
+  if(!Array.isArray(state.exerciseLog)) state.exerciseLog=[];
 }
 function checkNewDay(){
   const today=new Date().toISOString().slice(0,10);
@@ -669,8 +731,20 @@ function checkNewDay(){
           dHist[logDate]=d.log;
           localStorage.setItem('nl_history_detail',JSON.stringify(dHist));
         }
-        // Clear today's log
+        // Round 3: archive yesterday's exercise log
+        if(logDate && logDate!==today && d.exerciseLog && d.exerciseLog.length>0){
+          const exHist=JSON.parse(localStorage.getItem('nl_exercise_history')||'{}');
+          const exTotals=d.exerciseLog.reduce((acc,e)=>{
+            acc.caloriesBurned+=(e.calories||0);
+            acc.duration+=(e.duration||0);
+            return acc;
+          },{caloriesBurned:0,duration:0});
+          exHist[logDate]={...exTotals,activities:d.exerciseLog,date:logDate};
+          localStorage.setItem('nl_exercise_history',JSON.stringify(exHist));
+        }
+        // Clear today's logs
         state.log=[];
+        state.exerciseLog=[];
         save();
       }
     }
@@ -752,7 +826,28 @@ function readFile(file){
 }
 function clearImage(){state.imageB64=null;document.getElementById('preview-wrap').style.display='none';document.getElementById('upload-zone').style.display='block';document.querySelectorAll('.camera-row')[0].style.display='grid';document.getElementById('analyze-btn').disabled=true;document.getElementById('file-input').value='';document.getElementById('camera-input').value='';hideResult();}
 function profileCtx(){if(!state.profile)return'No profile set.';const p=state.profile;return`User: age ${p.age||'?'}, ${p.sex||'?'}, ${p.weight||'?'}kg, goal: ${p.goal}. Notes: ${p.notes||'none'}.`;}
-function nutritionPrompt(){return`You are a certified nutrition expert. Analyze the food and return ONLY a raw JSON object with no markdown, no backticks, no explanation:\n{"name":"food name","portion":"estimated portion","calories":number,"protein":number,"carbs":number,"fat":number,"sugar":number,"fiber":number,"note":"2-3 sentence coaching note relevant to user goal"}\n${profileCtx()}\nBe precise. All numbers are grams. If multiple foods combine totals.`;}
+function nutritionPrompt(){return`You are a certified nutrition expert analyzing a food photo. Your numbers will be used by a real person tracking their daily intake — overestimates compound across meals and ruin the day's accuracy. BE CONSERVATIVE.
+
+ACCURACY METHODOLOGY (follow exactly):
+1. First, identify each visible food item separately and estimate its portion CONSERVATIVELY. Use visible reference objects: a dinner plate is ~26-28cm, a teaspoon ~5ml, a tablespoon ~15ml, a typical bowl ~250-400ml.
+2. When uncertain about portion size, prefer the LOWER realistic estimate.
+3. Calculate macros for each item separately using standard USDA nutrition values, then SUM them to produce the totals. Do NOT estimate the grand total directly.
+4. Sanity check before returning: a plate of vegetables and a small handful of nuts should rarely exceed 600 kcal. A single bowl of rice/pasta is rarely over 400 kcal. If your total exceeds these for what looks like a light meal, recount portions — you have likely overestimated.
+
+COMMON OVERESTIMATION TRAPS TO AVOID:
+- 7 walnut halves ≠ "1 cup of walnuts". A real cup contains 50+ halves (~750 kcal). 7 halves = ~90 kcal, ~9g fat.
+- A small handful of almonds = 6 to 12 nuts (~40-80 kcal), NOT 1 oz / 23 nuts (170 kcal).
+- Sliced cucumber, tomato, or zucchini fan out on a plate and look much larger than their actual volume.
+- Cooked legumes (beans, lentils) in a curved bowl appear bigger than they are — judge by visible surface area, not perceived volume.
+- Leafy salads are mostly air; a "huge salad" is often only 1-2 packed cups of leaves.
+- Sauces, oils, and dressings should only be counted if clearly visible (pooled liquid or shiny coating) — do not assume oil/butter is present unless you can see it.
+
+OUTPUT FORMAT — return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+{"name":"short meal name","portion":"itemized portion list, e.g. 1.5 cups mung beans, 1 cup tomatoes, 7 walnut halves","calories":number,"protein":number,"carbs":number,"fat":number,"sugar":number,"fiber":number,"note":"2-3 sentence personalized coaching note relevant to user's goal"}
+
+${profileCtx()}
+
+All macros in grams (calories in kcal). The "portion" field should list each visible item with its estimated quantity. The macro totals must equal the sum across all items.`;}
 function extractJSON(text) {
   // Remove markdown code blocks
   let clean = text.replace(/```json|```/gi, '').trim();
@@ -835,18 +930,23 @@ function clearLog(){if(confirm('Clear all entries?')){state.log=[];save();render
 function getTotals(){return state.log.reduce((a,e)=>({calories:a.calories+(e.calories||0),protein:a.protein+(e.protein||0),carbs:a.carbs+(e.carbs||0),fat:a.fat+(e.fat||0),sugar:a.sugar+(e.sugar||0),fiber:a.fiber+(e.fiber||0)}),{calories:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0});}
 function renderToday(){
   initWater();
+  renderExercise();
   const t=getTotals();
   const tgt=state.targets||{calories:2000,protein:50,carbs:250,fat:65,sugar:50,fiber:25};
+  // Round 3: if toggle ON, add today's burned calories to the goal so user can "earn" extra food
+  const exTotals=getExerciseTotals();
+  const adjustEnabled=localStorage.getItem('nl_target_adjust_exercise')==='1';
+  const effectiveGoal=adjustEnabled?(tgt.calories+Math.round(exTotals.caloriesBurned)):tgt.calories;
   document.getElementById('t-protein').textContent=Math.round(t.protein)+'g';
   document.getElementById('t-carbs').textContent=Math.round(t.carbs)+'g';
   document.getElementById('t-fat').textContent=Math.round(t.fat)+'g';
   document.getElementById('t-sugar').textContent=Math.round(t.sugar)+'g';
   document.getElementById('t-fiber').textContent=Math.round(t.fiber)+'g';
-  const rem=Math.max(0,tgt.calories-Math.round(t.calories));
+  const rem=Math.max(0,effectiveGoal-Math.round(t.calories));
   document.getElementById('ring-remaining').textContent=rem.toLocaleString();
-  document.getElementById('ring-goal').textContent=tgt.calories;
+  document.getElementById('ring-goal').textContent=effectiveGoal;
   document.getElementById('ring-eaten').textContent=Math.round(t.calories);
-  const pct=Math.min(1,t.calories/tgt.calories);
+  const pct=Math.min(1,t.calories/effectiveGoal);
   document.getElementById('cal-ring').setAttribute('stroke-dashoffset',(264-pct*264).toFixed(1));
   document.getElementById('ring-pct').textContent=Math.round(pct*100)+'%';
   const col=pct>1?'#C0392B':'#2D6A4F';
@@ -1170,7 +1270,114 @@ window.showResult = function(json) {
   const el = document.getElementById('portion-mult');
   if (el) el.textContent = '1×';
   _origShowResult(json);
+  // Round 2: capture original AI values so we can detect user edits
+  state.originalAIName = (json.name || 'Unknown food').trim().toLowerCase();
+  state.originalAIPortion = (json.portion || '').trim().toLowerCase();
+  hideRecalcButton();
 };
+
+// ─── RECALCULATE MACROS (Round 2) ───
+// Shows the "Recalculate" button when the user edits name or portion away from AI's original guess
+function checkRecalcVisibility() {
+  const nameEl = document.getElementById('result-name');
+  const portionEl = document.getElementById('result-portion');
+  if (!nameEl || !portionEl || !state.pendingResult) return;
+  const currentName = (nameEl.value || '').trim().toLowerCase();
+  const currentPortion = (portionEl.value || '').trim().toLowerCase();
+  const nameChanged = state.originalAIName && currentName !== state.originalAIName;
+  const portionChanged = state.originalAIPortion && currentPortion !== state.originalAIPortion;
+  const wrap = document.getElementById('recalc-wrap');
+  if (wrap) wrap.style.display = (nameChanged || portionChanged) ? 'block' : 'none';
+}
+function hideRecalcButton() {
+  const wrap = document.getElementById('recalc-wrap');
+  if (wrap) wrap.style.display = 'none';
+}
+// Attach listeners to name and portion inputs (run once on DOM ready)
+(function attachRecalcListeners(){
+  const nameEl = document.getElementById('result-name');
+  const portionEl = document.getElementById('result-portion');
+  if (nameEl) nameEl.addEventListener('input', checkRecalcVisibility);
+  if (portionEl) portionEl.addEventListener('input', checkRecalcVisibility);
+})();
+
+function recalcPrompt(name, portion) {
+  return `You are a certified nutrition expert. The user has CORRECTED the food identification from a photo analysis. Trust their description completely — they know what they ate better than the photo can show.
+
+USER'S CORRECTION:
+- Food: "${name}"
+- Portion: "${portion}"
+
+Calculate accurate macros for EXACTLY this food and portion using standard USDA nutrition values. Be precise but conservative. If the portion description is vague (e.g. "a bowl"), use a reasonable typical serving (~250ml for a bowl, ~1 cup cooked for grains, etc.) and note the assumption in the coaching note.
+
+${profileCtx()}
+
+Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+{"name":"clean food name","portion":"clear portion description","calories":number,"protein":number,"carbs":number,"fat":number,"sugar":number,"fiber":number,"note":"2-3 sentence personalized coaching note relevant to user's goal"}
+
+All macros in grams, calories in kcal.`;
+}
+
+async function recalculateMacros() {
+  const nameEl = document.getElementById('result-name');
+  const portionEl = document.getElementById('result-portion');
+  const name = (nameEl?.value || '').trim();
+  const portion = (portionEl?.value || '').trim();
+  if (!name) { setAlert('Please enter a food name first.', 'error'); return; }
+  // Show loading state on the button
+  const btn = document.getElementById('recalc-btn');
+  const iconEl = document.getElementById('recalc-icon');
+  const textEl = document.getElementById('recalc-text');
+  const origIcon = iconEl.textContent;
+  const origText = textEl.textContent;
+  btn.disabled = true;
+  iconEl.textContent = '⏳';
+  textEl.textContent = 'Recalculating...';
+  setAlert('', '');
+  try {
+    const text = await callGemini(state.apiKey, recalcPrompt(name, portion), null, null);
+    const json = extractJSON(text);
+    // Update macro pills with new values
+    document.getElementById('r-cal').value = Math.round(json.calories || 0);
+    document.getElementById('r-protein').value = Math.round(json.protein || 0);
+    document.getElementById('r-carbs').value = Math.round(json.carbs || 0);
+    document.getElementById('r-fat').value = Math.round(json.fat || 0);
+    document.getElementById('r-sugar').value = Math.round(json.sugar || 0);
+    document.getElementById('result-note').textContent = json.note || '';
+    // Update pendingResult so "Add to Log" picks up the new numbers
+    state.pendingResult = {
+      ...state.pendingResult,
+      name: json.name || name,
+      portion: json.portion || portion,
+      calories: json.calories || 0,
+      protein: json.protein || 0,
+      carbs: json.carbs || 0,
+      fat: json.fat || 0,
+      sugar: json.sugar || 0,
+      fiber: json.fiber || 0,
+      note: json.note || ''
+    };
+    // Reset portion adjuster baseline so + / − works from the new numbers
+    baseResult = {...state.pendingResult};
+    portionMultiplier = 1;
+    const pm = document.getElementById('portion-mult');
+    if (pm) pm.textContent = '1×';
+    // Treat the new values as the new "original" so button hides until next edit
+    state.originalAIName = (json.name || name).trim().toLowerCase();
+    state.originalAIPortion = (json.portion || portion).trim().toLowerCase();
+    nameEl.value = state.pendingResult.name;
+    portionEl.value = state.pendingResult.portion;
+    hideRecalcButton();
+    setAlert('Macros recalculated!', 'success');
+    setTimeout(() => setAlert('', ''), 2000);
+  } catch (e) {
+    setAlert('Could not recalculate: ' + (e.message || 'Unknown error'), 'error');
+  } finally {
+    btn.disabled = false;
+    iconEl.textContent = origIcon;
+    textEl.textContent = origText;
+  }
+}
 
 // ─── NOTIFICATIONS ───
 function loadNotifToggles() {
@@ -1313,6 +1520,272 @@ initLogDate();
 
 </script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+
+<script>
+// ─── EXERCISE TRACKING (Round 3) ───
+// Storage:
+//   nl_state.exerciseLog       — today's exercises [{id,name,duration,calories,time}]
+//   nl_exercise_history        — daily totals: {date: {caloriesBurned, duration, activities, date}}
+//   nl_exercise_favs           — favourite activities (max 20)
+//   nl_target_adjust_exercise  — '0' or '1' for the toggle
+
+function getExerciseTotals() {
+  const list = state.exerciseLog || [];
+  return list.reduce((acc, e) => {
+    acc.caloriesBurned += (e.calories || 0);
+    acc.duration += (e.duration || 0);
+    return acc;
+  }, {caloriesBurned: 0, duration: 0});
+}
+
+function renderExercise() {
+  const totals = getExerciseTotals();
+  const burnEl = document.getElementById('ex-burn-total');
+  const durEl = document.getElementById('ex-duration-total');
+  const listEl = document.getElementById('ex-list');
+  if (!burnEl) return;
+  burnEl.textContent = Math.round(totals.caloriesBurned);
+  durEl.textContent = Math.round(totals.duration) + ' min';
+  if (!state.exerciseLog || state.exerciseLog.length === 0) {
+    listEl.innerHTML = '<div style="font-size:0.78rem;color:var(--text3);text-align:center;padding:0.4rem 0;">No activity logged yet today</div>';
+    return;
+  }
+  listEl.innerHTML = state.exerciseLog.map(e => `
+    <div class="ex-item">
+      <div class="ex-icon">${exIconFor(e.name)}</div>
+      <div class="ex-info">
+        <div class="ex-name">${e.name}</div>
+        <div class="ex-meta">${e.time||''} · ${Math.round(e.duration||0)} min</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="ex-burn">${Math.round(e.calories||0)}</div>
+        <div class="ex-burn-lbl">kcal</div>
+      </div>
+      <button class="btn btn-sm" style="background:rgba(248,113,113,0.1);color:#F87171;border:none;padding:2px 6px;border-radius:5px;margin-left:4px;" onclick="removeExercise(${e.id})">x</button>
+    </div>
+  `).join('');
+}
+
+function exIconFor(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('walk')) return '🚶';
+  if (n.includes('run') || n.includes('jog')) return '🏃';
+  if (n.includes('cycl') || n.includes('bike')) return '🚴';
+  if (n.includes('swim')) return '🏊';
+  if (n.includes('yoga') || n.includes('stretch') || n.includes('pilates')) return '🧘';
+  if (n.includes('dance') || n.includes('zumba')) return '💃';
+  if (n.includes('hik')) return '🥾';
+  if (n.includes('strength') || n.includes('weight') || n.includes('gym') || n.includes('lift')) return '🏋️';
+  if (n.includes('garden') || n.includes('housework') || n.includes('clean')) return '🧹';
+  return '🏃';
+}
+
+function removeExercise(id) {
+  state.exerciseLog = (state.exerciseLog || []).filter(e => e.id !== id);
+  save();
+  renderExercise();
+  renderToday();
+}
+
+// ─── EXERCISE MODAL ───
+function openExerciseModal() {
+  document.getElementById('ex-modal-overlay').style.display = 'block';
+  document.getElementById('ex-ai-input').value = '';
+  document.getElementById('ex-ai-result').style.display = 'none';
+  document.getElementById('ex-man-name').value = '';
+  document.getElementById('ex-man-duration').value = '';
+  document.getElementById('ex-man-burn').value = '';
+  setExAlert('', '');
+  // Default to AI tab
+  document.querySelectorAll('.ex-modal-card .method-tab').forEach((t,i)=>t.classList.toggle('active', i===0));
+  document.querySelectorAll('.ex-modal-card .method-content').forEach((c,i)=>c.classList.toggle('active', i===0));
+  renderExerciseFavs();
+}
+function closeExerciseModal(e) {
+  // Called either from X button (no event, just close) or from overlay click (close only if outside card)
+  if (!e || e.target === document.getElementById('ex-modal-overlay')) {
+    document.getElementById('ex-modal-overlay').style.display = 'none';
+  }
+}
+function switchExMethod(method, el) {
+  const card = document.querySelector('.ex-modal-card');
+  card.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+  card.querySelectorAll('.method-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ex-method-' + method).classList.add('active');
+  if (method === 'favs') renderExerciseFavs();
+}
+function setExAlert(msg, type) {
+  const el = document.getElementById('ex-alert');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'alert' + (type ? ' ' + type : '');
+}
+function showExLoading(v) {
+  document.getElementById('ex-loading').classList.toggle('visible', v);
+}
+
+// ─── AI EXERCISE ESTIMATE ───
+function exercisePrompt(desc) {
+  const w = state.profile?.weight || 65;
+  const sex = state.profile?.sex || 'unspecified';
+  const age = state.profile?.age || 35;
+  return `You are a fitness expert estimating calories burned for an activity using standard MET (Metabolic Equivalent of Task) values.
+
+USER: ${age} year old ${sex}, ${w} kg.
+
+ACTIVITY: "${desc}"
+
+Calculation: calories burned ≈ MET × weight(kg) × hours.
+
+Reference MET values:
+- Walking slow (3 km/h): 2.5; brisk (5 km/h): 4.0; uphill: 6.0
+- Running 6 km/h: 6.0; 8 km/h: 8.3; 10 km/h: 10.0
+- Cycling leisurely: 4.0; moderate (15-20 km/h): 6.8; vigorous: 10.0
+- Yoga / pilates / stretching: 2.5-3.0
+- Swimming leisurely: 5.8; moderate: 8.3
+- Strength training moderate: 5.0; vigorous: 6.0
+- Housework / gardening: 3.0-4.0
+- Hiking: 6.0; dancing: 4.5
+
+BE CONSERVATIVE — overestimating burn leads users to over-eat and undermines their goals. If duration is ambiguous, assume the lower end. If intensity is not specified, assume moderate.
+
+Return ONLY a raw JSON object, no markdown, no backticks:
+{"activity":"short clean activity name","duration_min":number,"calories_burned":number,"met_value":number,"note":"1 short sentence about the estimate or its assumptions"}`;
+}
+
+async function analyzeExercise() {
+  const input = document.getElementById('ex-ai-input').value.trim();
+  if (!input) { setExAlert('Please describe your activity.', 'error'); return; }
+  setExAlert('', '');
+  showExLoading(true);
+  document.getElementById('ex-ai-result').style.display = 'none';
+  try {
+    const text = await callGemini(state.apiKey, exercisePrompt(input), null, null);
+    const json = extractJSON(text);
+    document.getElementById('ex-ai-name').value = json.activity || input;
+    document.getElementById('ex-ai-duration').value = Math.round(json.duration_min || 30);
+    document.getElementById('ex-ai-burn').value = Math.round(json.calories_burned || 0);
+    document.getElementById('ex-ai-note').textContent = json.note || '';
+    document.getElementById('ex-ai-result').style.display = 'block';
+  } catch (e) {
+    setExAlert('Could not estimate: ' + (e.message || 'Unknown error'), 'error');
+  }
+  showExLoading(false);
+}
+
+function confirmAIExercise() {
+  const name = document.getElementById('ex-ai-name').value.trim();
+  const duration = parseFloat(document.getElementById('ex-ai-duration').value) || 0;
+  const calories = parseFloat(document.getElementById('ex-ai-burn').value) || 0;
+  if (!name || calories <= 0) { setExAlert('Please fill in all fields.', 'error'); return; }
+  addExerciseToLog({name, duration, calories});
+  closeExerciseModalForce();
+}
+
+function addManualExercise() {
+  const name = document.getElementById('ex-man-name').value.trim();
+  const duration = parseFloat(document.getElementById('ex-man-duration').value) || 0;
+  const calories = parseFloat(document.getElementById('ex-man-burn').value) || 0;
+  if (!name) { setExAlert('Please enter an activity name.', 'error'); return; }
+  if (calories <= 0) { setExAlert('Please enter calories burned.', 'error'); return; }
+  addExerciseToLog({name, duration, calories});
+  closeExerciseModalForce();
+}
+
+function addExerciseToLog({name, duration, calories}) {
+  if (!state.exerciseLog) state.exerciseLog = [];
+  state.exerciseLog.push({
+    id: Date.now(),
+    name,
+    duration: Math.round(duration),
+    calories: Math.round(calories),
+    time: new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})
+  });
+  save();
+  renderExercise();
+  renderToday();
+  setAlert('Exercise added!', 'success');
+  setTimeout(() => setAlert('', ''), 1800);
+}
+
+function closeExerciseModalForce() {
+  document.getElementById('ex-modal-overlay').style.display = 'none';
+}
+
+// ─── EXERCISE FAVOURITES ───
+function getExerciseFavs() {
+  try { return JSON.parse(localStorage.getItem('nl_exercise_favs') || '[]'); } catch(e) { return []; }
+}
+function saveExerciseFavsList(favs) {
+  localStorage.setItem('nl_exercise_favs', JSON.stringify(favs));
+}
+function saveExerciseFavourite() {
+  const name = document.getElementById('ex-ai-name').value.trim();
+  const duration = parseFloat(document.getElementById('ex-ai-duration').value) || 0;
+  const calories = parseFloat(document.getElementById('ex-ai-burn').value) || 0;
+  if (!name || calories <= 0) { setExAlert('Estimate an activity first before saving.', 'error'); return; }
+  const favs = getExerciseFavs();
+  if (!favs.find(f => f.name.toLowerCase() === name.toLowerCase())) {
+    favs.unshift({id: Date.now(), name, duration: Math.round(duration), calories: Math.round(calories)});
+    if (favs.length > 20) favs.pop();
+    saveExerciseFavsList(favs);
+    setExAlert('Saved to favourites!', 'success');
+  } else {
+    setExAlert('Already in favourites.', 'success');
+  }
+  setTimeout(() => setExAlert('', ''), 1800);
+}
+function renderExerciseFavs() {
+  const list = document.getElementById('ex-favs-list');
+  const favs = getExerciseFavs();
+  if (!favs.length) {
+    list.innerHTML = '<p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:1rem;">No favourite activities yet. Use the AI tab and tap ⭐ Save to add one.</p>';
+    return;
+  }
+  list.innerHTML = favs.map(f => `
+    <div class="fav-item">
+      <div>
+        <div class="fav-name">${exIconFor(f.name)} ${f.name}</div>
+        <div class="fav-cal">${Math.round(f.calories)} kcal · ${Math.round(f.duration)} min</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button class="fav-add" onclick="quickAddExFav(${f.id})">+ Add</button>
+        <button class="fav-del" onclick="deleteExFav(${f.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+function quickAddExFav(id) {
+  const fav = getExerciseFavs().find(f => f.id === id);
+  if (!fav) return;
+  addExerciseToLog({name: fav.name, duration: fav.duration, calories: fav.calories});
+  closeExerciseModalForce();
+}
+function deleteExFav(id) {
+  const favs = getExerciseFavs().filter(f => f.id !== id);
+  saveExerciseFavsList(favs);
+  renderExerciseFavs();
+}
+
+// ─── EXERCISE-CALORIE-GOAL TOGGLE ───
+function loadExerciseToggle() {
+  const on = localStorage.getItem('nl_target_adjust_exercise') === '1';
+  const btn = document.getElementById('toggle-ex-adjust');
+  if (btn) btn.classList.toggle('on', on);
+}
+function toggleExerciseAdjust(btn) {
+  const isOn = btn.classList.toggle('on');
+  localStorage.setItem('nl_target_adjust_exercise', isOn ? '1' : '0');
+  // Re-render Today so the ring reflects the new setting immediately
+  renderToday();
+}
+
+// Initialize on load
+loadExerciseToggle();
+renderExercise();
+</script>
+
 
 <script>
 // ── HISTORY CHARTS ──
@@ -1515,6 +1988,67 @@ function renderHistory() {
   }
 }
 </script>
+
+<!-- EXERCISE MODAL (Round 3) -->
+<div class="ex-modal-overlay" id="ex-modal-overlay" onclick="closeExerciseModal(event)">
+  <div class="ex-modal-card" onclick="event.stopPropagation()">
+    <div class="ex-modal-header">
+      <div class="ex-modal-title">🏃 Add Exercise</div>
+      <button class="ex-modal-close" onclick="closeExerciseModal()">✕</button>
+    </div>
+    <!-- Method tabs -->
+    <div class="method-tabs">
+      <button class="method-tab active" onclick="switchExMethod('ai',this)">🤖 AI Estimate</button>
+      <button class="method-tab" onclick="switchExMethod('manual',this)">✏️ Manual</button>
+      <button class="method-tab" onclick="switchExMethod('favs',this)">⭐ Favourites</button>
+    </div>
+    <!-- AI tab -->
+    <div class="method-content active" id="ex-method-ai">
+      <div class="form-group">
+        <label class="form-label">Describe your activity</label>
+        <textarea class="form-control" id="ex-ai-input" placeholder="e.g. 30 min brisk walk, yoga 45 min, cycling 1 hour moderate" style="min-height:70px;"></textarea>
+      </div>
+      <button class="btn btn-primary" id="ex-ai-btn" onclick="analyzeExercise()" style="margin-top:0.4rem;">Estimate Calories Burned</button>
+      <div class="loading" id="ex-loading" style="margin-top:0.5rem;"><div class="spinner"></div>Estimating burn...</div>
+      <div class="alert" id="ex-alert" style="margin-top:0.5rem;"></div>
+      <!-- AI result preview -->
+      <div id="ex-ai-result" style="display:none;margin-top:0.85rem;padding:0.85rem;background:var(--bg3);border-radius:var(--r-sm);border:1px dashed var(--green);">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+          <input type="text" id="ex-ai-name" class="form-control" style="font-size:0.95rem;font-weight:600;padding:0.35rem 0.6rem;border-radius:6px;flex:1;">
+          <span style="font-size:0.7rem;color:var(--text3);white-space:nowrap;">✏️ tap to edit</span>
+        </div>
+        <div class="grid-2" style="gap:0.5rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Duration (min)</label>
+            <input type="number" id="ex-ai-duration" class="form-control" min="1" value="30">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Calories burned</label>
+            <input type="number" id="ex-ai-burn" class="form-control" min="0" value="0">
+          </div>
+        </div>
+        <div id="ex-ai-note" style="font-size:0.75rem;color:var(--text3);margin-top:0.5rem;line-height:1.5;"></div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+          <button class="btn btn-primary" onclick="confirmAIExercise()" style="flex:2;margin-top:0;">Add to Today</button>
+          <button class="btn btn-ghost" onclick="saveExerciseFavourite()" style="flex:1;margin-top:0;">⭐ Save</button>
+        </div>
+      </div>
+    </div>
+    <!-- Manual tab -->
+    <div class="method-content" id="ex-method-manual">
+      <div class="form-group"><label class="form-label">Activity name</label><input type="text" class="form-control" id="ex-man-name" placeholder="e.g. Morning walk"></div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Duration (min)</label><input type="number" class="form-control" id="ex-man-duration" placeholder="30" min="1"></div>
+        <div class="form-group"><label class="form-label">Calories burned</label><input type="number" class="form-control" id="ex-man-burn" placeholder="150" min="0"></div>
+      </div>
+      <button class="btn btn-primary" onclick="addManualExercise()">Add to Today</button>
+    </div>
+    <!-- Favourites tab -->
+    <div class="method-content" id="ex-method-favs">
+      <div id="ex-favs-list"><p style="font-size:0.8rem;color:var(--text3);text-align:center;padding:1rem;">No favourite activities yet. Use the AI tab and tap ⭐ Save to add one.</p></div>
+    </div>
+  </div>
+</div>
 
 <!-- DAY DETAIL MODAL -->
 <div id="day-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;padding:1rem;overflow-y:auto;" onclick="closeDayDetail(event)">
