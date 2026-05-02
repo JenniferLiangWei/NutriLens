@@ -396,10 +396,10 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="ai-result card" id="ai-result" style="margin-top:0.75rem;">
       <!-- EDITABLE FOOD NAME & PORTION -->
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:2px;">
-        <input type="text" id="result-name" class="form-control" style="font-size:1rem;font-weight:600;padding:0.35rem 0.6rem;border-radius:6px;" placeholder="Food name">
+        <input type="text" id="result-name" class="form-control" style="font-size:1rem;font-weight:600;padding:0.35rem 0.6rem;border-radius:6px;" placeholder="Food name" oninput="checkRecalcVisibility()" onchange="checkRecalcVisibility()">
         <span style="font-size:0.7rem;color:var(--text3);white-space:nowrap;flex-shrink:0;">✏️ tap to edit</span>
       </div>
-      <input type="text" id="result-portion" class="form-control" style="font-size:0.78rem;color:var(--text3);padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.5rem;" placeholder="Portion size">
+      <input type="text" id="result-portion" class="form-control" style="font-size:0.78rem;color:var(--text3);padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.5rem;" placeholder="Portion size" oninput="checkRecalcVisibility()" onchange="checkRecalcVisibility()">
       <!-- RECALCULATE BUTTON (only visible after user edits name or portion) -->
       <div id="recalc-wrap" style="display:none;margin-bottom:0.85rem;">
         <button id="recalc-btn" onclick="recalculateMacros()" style="width:100%;padding:0.5rem;border-radius:8px;border:1px dashed var(--green);background:rgba(45,106,79,0.06);color:var(--green);font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
@@ -472,6 +472,8 @@ textarea.form-control{resize:vertical;min-height:70px;}
           <div class="ring-stats">
             <div class="ring-stat">Goal: <span id="ring-goal">—</span> kcal</div>
             <div class="ring-stat">Eaten: <span id="ring-eaten" style="color:var(--orange);">—</span> kcal</div>
+            <div class="ring-stat" id="ring-burned-row" style="display:none;">Burned: <span id="ring-burned" style="color:var(--green);">—</span> kcal</div>
+            <div class="ring-stat" id="ring-net-row" style="display:none;font-size:0.72rem;color:var(--text3);font-style:italic;">Net intake: <span id="ring-net">—</span> kcal</div>
           </div>
         </div>
       </div>
@@ -505,6 +507,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
         <div style="font-size:0.75rem;color:var(--text3);" id="ex-duration-total">0 min</div>
       </div>
       <div id="ex-list"></div>
+      <div id="ex-toggle-hint" style="font-size:0.7rem;color:var(--text3);margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);line-height:1.5;"></div>
     </div>
     <div class="card">
       <div class="card-title">Progress vs Goals</div>
@@ -849,27 +852,97 @@ ${profileCtx()}
 
 All macros in grams (calories in kcal). The "portion" field should list each visible item with its estimated quantity. The macro totals must equal the sum across all items.`;}
 function extractJSON(text) {
-  // Remove markdown code blocks
+  if (!text || !text.trim()) throw new Error('Empty response from AI');
+
+  // Strategy 1: Strip markdown code fences and parse directly
   let clean = text.replace(/```json|```/gi, '').trim();
-  // Try direct parse first
   try { return JSON.parse(clean); } catch(e) {}
-  // Try to find JSON object in the text
-  const match = clean.match(/\{[\s\S]*\}/);
-  if (match) {
-    try { return JSON.parse(match[0]); } catch(e) {}
+
+  // Strategy 2: Find ALL {...} blocks in the text, try the longest first
+  const matches = clean.match(/\{[\s\S]*?\}/g) || [];
+  // Also try the greedy "biggest possible" object
+  const greedy = clean.match(/\{[\s\S]*\}/);
+  if (greedy) matches.unshift(greedy[0]);
+  matches.sort((a, b) => b.length - a.length);
+  for (const m of matches) {
+    try { return JSON.parse(m); } catch(e) {}
   }
-  // Try fixing common issues: trailing commas, single quotes
-  try {
-    const fixed = clean
-      .replace(/,\s*}/g, '}')
-      .replace(/,\s*]/g, ']')
-      .replace(/'/g, '"');
-    return JSON.parse(fixed);
-  } catch(e) {}
+
+  // Strategy 3: Common JSON repairs (trailing commas, single quotes)
+  const repaired = clean
+    .replace(/,\s*}/g, '}')
+    .replace(/,\s*]/g, ']')
+    .replace(/'/g, '"');
+  try { return JSON.parse(repaired); } catch(e) {}
+
+  // Strategy 4: Truncated JSON repair — find first '{' and try to balance braces/brackets
+  const startIdx = clean.indexOf('{');
+  if (startIdx >= 0) {
+    let truncated = clean.substring(startIdx);
+    // Count unmatched braces/brackets and append closers
+    let openBrace = 0, openBracket = 0, inString = false, escape = false;
+    for (let i = 0; i < truncated.length; i++) {
+      const c = truncated[i];
+      if (escape) { escape = false; continue; }
+      if (c === '\\') { escape = true; continue; }
+      if (c === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (c === '{') openBrace++;
+      else if (c === '}') openBrace--;
+      else if (c === '[') openBracket++;
+      else if (c === ']') openBracket--;
+    }
+    // If we ended inside a string, close the string
+    if (inString) truncated += '"';
+    // If the last value is incomplete (e.g. ends with comma or colon), drop the dangling fragment
+    truncated = truncated.replace(/,\s*$/, '').replace(/:\s*$/, ':null');
+    while (openBracket-- > 0) truncated += ']';
+    while (openBrace-- > 0) truncated += '}';
+    try { return JSON.parse(truncated); } catch(e) {}
+  }
+
   throw new Error('Could not parse AI response as JSON');
 }
-async function analyzePhoto(){if(!state.imageB64)return;showLoading(true);hideResult();setAlert('','');try{const text=await callGemini(state.apiKey,nutritionPrompt(),state.imageB64,state.imageMime);const json=extractJSON(text);showResult(json);}catch(e){setAlert('Error: '+(e.message||'Could not analyze image'),'error');}showLoading(false);}
-async function analyzeDescription(){const desc=document.getElementById('food-description').value.trim();if(!desc){setAlert('Please describe what you ate.','error');return;}showLoading(true);hideResult();setAlert('','');try{const prompt=`The user ate: "${desc}". ${nutritionPrompt()}`;const text=await callGemini(state.apiKey,prompt,null,null);const json=extractJSON(text);showResult(json);}catch(e){setAlert('Error: '+(e.message||'Analysis failed'),'error');}showLoading(false);}
+async function analyzePhoto(){
+  if(!state.imageB64)return;
+  showLoading(true);hideResult();setAlert('','');
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const text=await callGemini(state.apiKey,nutritionPrompt(),state.imageB64,state.imageMime);
+      const json=extractJSON(text);
+      showResult(json);
+      showLoading(false);
+      return;
+    }catch(e){
+      lastError=e;
+      if(attempt===0)await new Promise(r=>setTimeout(r,500));
+    }
+  }
+  setAlert('Error: '+(lastError?.message||'Could not analyze image')+' — try again or use Describe.','error');
+  showLoading(false);
+}
+async function analyzeDescription(){
+  const desc=document.getElementById('food-description').value.trim();
+  if(!desc){setAlert('Please describe what you ate.','error');return;}
+  showLoading(true);hideResult();setAlert('','');
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const prompt=`The user ate: "${desc}". ${nutritionPrompt()}`;
+      const text=await callGemini(state.apiKey,prompt,null,null);
+      const json=extractJSON(text);
+      showResult(json);
+      showLoading(false);
+      return;
+    }catch(e){
+      lastError=e;
+      if(attempt===0)await new Promise(r=>setTimeout(r,500));
+    }
+  }
+  setAlert('Error: '+(lastError?.message||'Analysis failed')+' — try again with simpler wording.','error');
+  showLoading(false);
+}
 function showResult(json){
   state.pendingResult=json;
   document.getElementById('result-name').value=json.name||'Unknown food';
@@ -944,8 +1017,27 @@ function renderToday(){
   document.getElementById('t-fiber').textContent=Math.round(t.fiber)+'g';
   const rem=Math.max(0,effectiveGoal-Math.round(t.calories));
   document.getElementById('ring-remaining').textContent=rem.toLocaleString();
-  document.getElementById('ring-goal').textContent=effectiveGoal;
+  // Show goal — when toggle is ON and there's burn, show it as "base + burn = total"
+  const burnedRound = Math.round(exTotals.caloriesBurned);
+  if (adjustEnabled && burnedRound > 0) {
+    document.getElementById('ring-goal').innerHTML = `${tgt.calories} <span style="font-size:0.7rem;color:var(--green);">+ ${burnedRound} burned = ${effectiveGoal}</span>`;
+  } else {
+    document.getElementById('ring-goal').textContent = tgt.calories;
+  }
   document.getElementById('ring-eaten').textContent=Math.round(t.calories);
+  // Round 3: show Burned row whenever there is any logged exercise
+  const burnedRow = document.getElementById('ring-burned-row');
+  const netRow = document.getElementById('ring-net-row');
+  if (burnedRound > 0) {
+    burnedRow.style.display = 'block';
+    document.getElementById('ring-burned').textContent = burnedRound;
+    netRow.style.display = 'block';
+    const netIntake = Math.round(t.calories) - burnedRound;
+    document.getElementById('ring-net').textContent = netIntake;
+  } else {
+    burnedRow.style.display = 'none';
+    netRow.style.display = 'none';
+  }
   const pct=Math.min(1,t.calories/effectiveGoal);
   document.getElementById('cal-ring').setAttribute('stroke-dashoffset',(264-pct*264).toFixed(1));
   document.getElementById('ring-pct').textContent=Math.round(pct*100)+'%';
@@ -1282,10 +1374,17 @@ function checkRecalcVisibility() {
   const nameEl = document.getElementById('result-name');
   const portionEl = document.getElementById('result-portion');
   if (!nameEl || !portionEl || !state.pendingResult) return;
+  // Lazy-set originals if missing (defensive: handles stale sessions or race conditions)
+  if (state.originalAIName == null) {
+    state.originalAIName = (state.pendingResult.name || '').trim().toLowerCase();
+  }
+  if (state.originalAIPortion == null) {
+    state.originalAIPortion = (state.pendingResult.portion || '').trim().toLowerCase();
+  }
   const currentName = (nameEl.value || '').trim().toLowerCase();
   const currentPortion = (portionEl.value || '').trim().toLowerCase();
-  const nameChanged = state.originalAIName && currentName !== state.originalAIName;
-  const portionChanged = state.originalAIPortion && currentPortion !== state.originalAIPortion;
+  const nameChanged = currentName && currentName !== state.originalAIName;
+  const portionChanged = currentPortion && currentPortion !== state.originalAIPortion;
   const wrap = document.getElementById('recalc-wrap');
   if (wrap) wrap.style.display = (nameChanged || portionChanged) ? 'block' : 'none';
 }
@@ -1543,27 +1642,37 @@ function renderExercise() {
   const burnEl = document.getElementById('ex-burn-total');
   const durEl = document.getElementById('ex-duration-total');
   const listEl = document.getElementById('ex-list');
+  const hintEl = document.getElementById('ex-toggle-hint');
   if (!burnEl) return;
   burnEl.textContent = Math.round(totals.caloriesBurned);
   durEl.textContent = Math.round(totals.duration) + ' min';
   if (!state.exerciseLog || state.exerciseLog.length === 0) {
     listEl.innerHTML = '<div style="font-size:0.78rem;color:var(--text3);text-align:center;padding:0.4rem 0;">No activity logged yet today</div>';
-    return;
+  } else {
+    listEl.innerHTML = state.exerciseLog.map(e => `
+      <div class="ex-item">
+        <div class="ex-icon">${exIconFor(e.name)}</div>
+        <div class="ex-info">
+          <div class="ex-name">${e.name}</div>
+          <div class="ex-meta">${e.time||''} · ${Math.round(e.duration||0)} min</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="ex-burn">${Math.round(e.calories||0)}</div>
+          <div class="ex-burn-lbl">kcal</div>
+        </div>
+        <button class="btn btn-sm" style="background:rgba(248,113,113,0.1);color:#F87171;border:none;padding:2px 6px;border-radius:5px;margin-left:4px;" onclick="removeExercise(${e.id})">x</button>
+      </div>
+    `).join('');
   }
-  listEl.innerHTML = state.exerciseLog.map(e => `
-    <div class="ex-item">
-      <div class="ex-icon">${exIconFor(e.name)}</div>
-      <div class="ex-info">
-        <div class="ex-name">${e.name}</div>
-        <div class="ex-meta">${e.time||''} · ${Math.round(e.duration||0)} min</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="ex-burn">${Math.round(e.calories||0)}</div>
-        <div class="ex-burn-lbl">kcal</div>
-      </div>
-      <button class="btn btn-sm" style="background:rgba(248,113,113,0.1);color:#F87171;border:none;padding:2px 6px;border-radius:5px;margin-left:4px;" onclick="removeExercise(${e.id})">x</button>
-    </div>
-  `).join('');
+  // Toggle status hint — guides user to the Profile setting
+  if (hintEl) {
+    const adjustEnabled = localStorage.getItem('nl_target_adjust_exercise') === '1';
+    if (adjustEnabled) {
+      hintEl.innerHTML = '✓ Burned calories are adding to your daily goal. <a onclick="showPanel(\'profile\',document.querySelectorAll(\'.nav-item\')[4]);return false;" style="color:var(--green);cursor:pointer;text-decoration:underline;">Change in Profile</a>';
+    } else {
+      hintEl.innerHTML = 'Burn is shown for tracking only — your calorie goal stays fixed. <a onclick="showPanel(\'profile\',document.querySelectorAll(\'.nav-item\')[4]);return false;" style="color:var(--green);cursor:pointer;text-decoration:underline;">Adjust in Profile</a>';
+    }
+  }
 }
 
 function exIconFor(name) {
